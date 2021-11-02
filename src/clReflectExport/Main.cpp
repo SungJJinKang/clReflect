@@ -72,3 +72,65 @@ int main(int argc, const char* argv[])
 
     return 0;
 }
+
+
+
+struct Argvs
+{
+    int count = 0;
+    char** argv;
+};
+
+Argvs argvSplit(const char* string, const char delimiter)
+{
+	int length = 0, count = 0, i = 0, j = 0;
+	while (*(string++))
+	{
+		if (*string == delimiter)
+			count++;
+		length++;
+	}
+	string -= (length + 1); // string was incremented one more than length
+	count++;
+
+	char** array = (char**)malloc(sizeof(char*) * (count + 1));
+	char** base = array;
+
+	*array = (char*)malloc(sizeof(char));
+	**array = '\0';
+	array++;
+
+	for (i = 0; i < count; i++)
+	{
+		j = 0;
+		while (string[j] != delimiter)
+			j++;
+		j++;
+		*array = (char*)malloc(sizeof(char) * j);
+		memcpy(*array, string, (j - 1));
+		(*array)[j - 1] = '\0';
+		string += j;
+		array++;
+	}
+
+	Argvs argsv;
+	argsv.argv = base;
+	argsv.count = count + 1;
+
+	return argsv;
+}
+
+extern "C" __declspec(dllexport) int c_clexport(const char* argv)
+{
+    const Argvs argvs = argvSplit(argv, ' ');
+
+    const int result = main(argvs.count, (const char**)argvs.argv);
+
+	for (int i = 0; i < argvs.count ; i++)
+	{
+		free(argvs.argv[i]);
+	}
+	free(argvs.argv);
+
+    return result;
+}

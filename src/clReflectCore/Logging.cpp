@@ -18,6 +18,10 @@
 #include <map>
 
 
+#if defined(_MSC_VER)
+#include "immintrin.h"
+#endif
+
 namespace
 {
 	//
@@ -188,14 +192,32 @@ namespace
 
 	unsigned int Log2(unsigned int v)
 	{
-        if (v == 0)
-        {
-            v = -1;
-        }
-        else
-        {
-            v = sizeof(unsigned int) * 8 - 1 - __lzcnt(v);
-        }
+#if defined(_MSC_VER) && defined(_M_IX86)
+		// Branchless, taking into account v=0, x86 specific
+		_asm
+		{
+			mov eax, v
+			mov ebx, -1
+			bsr eax, eax
+			cmovz eax, ebx
+			mov v, eax
+		}
+#else
+		if (v == 0)
+		{
+			v = -1;
+		}
+		else
+		{
+			v = sizeof(unsigned int) * 8 - 1
+#if defined(__GNUC__)  || defined( __clang__)
+				-__builtin_ia32_lzcnt_u32(v); // this require "-mlzcnt" compiler option
+#elif defined(_MSC_VER)
+				-_lzcnt_u32(v);
+#endif
+		}
+#endif
+
 		return v;
 	}
 }

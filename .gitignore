@@ -15,3 +15,5 @@ extern/llvm-build-gnu/*
 
 build_x86
 build_x64
+
+*.csv

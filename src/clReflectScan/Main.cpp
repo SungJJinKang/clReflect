@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <mutex>
 
 namespace
 {
@@ -101,7 +102,7 @@ namespace
     }
 }
 
-
+static std::mutex CommonOptionsParserMutex{};
 
 int main(int argc, const char* argv[])
 {
@@ -120,12 +121,16 @@ int main(int argc, const char* argv[])
                                              ToolCategory, llvm::cl::value_desc("filename"));
     static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
 
+    std::unique_lock<std::mutex> lk_b(CommonOptionsParserMutex);
+
     // Parse command-line options
     auto options_parser = clang::tooling::CommonOptionsParser::create(argc, argv, ToolCategoryOption, llvm::cl::OneOrMore);
     if (!options_parser)
     {
         return 1;
     }
+    
+    lk_b.unlock();
 
     // Initialize inline ASM parsing
     llvm::InitializeNativeTarget();

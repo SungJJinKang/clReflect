@@ -920,7 +920,7 @@ namespace clcpp
 
         bool Load(IFile* file, IAllocator* allocator, unsigned int options);
         bool Load(IFile* file, IAllocator* allocator, pointer_type base_address, unsigned int options);
-
+		bool UnLoad();
         // This returns the name as it exists in the name database, with the text pointer
         // pointing to within the database's allocated name data
         Name GetName(unsigned int hash) const;

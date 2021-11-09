@@ -572,8 +572,7 @@ clcpp::Database::Database()
 
 clcpp::Database::~Database()
 {
-    if (m_DatabaseMem)
-        m_Allocator->Free(m_DatabaseMem);
+    UnLoad();
 }
 
 bool clcpp::Database::Load(IFile* file, IAllocator* allocator, unsigned int options)
@@ -615,6 +614,20 @@ bool clcpp::Database::Load(IFile* file, IAllocator* allocator, pointer_type base
 
     return m_DatabaseMem != 0;
 }
+
+bool clcpp::Database::UnLoad()
+{
+    bool isUnLoadSuccess= false;
+    if (m_DatabaseMem != nullptr)
+    {
+      m_Allocator->Free(m_DatabaseMem);
+      m_DatabaseMem = nullptr;
+      isUnLoadSuccess = true;
+    }
+
+    return isUnLoadSuccess;
+}
+
 
 clcpp::Name clcpp::Database::GetName(unsigned int hash) const
 {

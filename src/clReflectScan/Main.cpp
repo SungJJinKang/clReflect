@@ -125,12 +125,12 @@ int main(int argc, const char* argv[])
 
     // Parse command-line options
     auto options_parser = clang::tooling::CommonOptionsParser::create(argc, argv, ToolCategoryOption, llvm::cl::OneOrMore);
+    lk_b.unlock();
+    
     if (!options_parser)
     {
         return 1;
     }
-    
-    lk_b.unlock();
 
     // Initialize inline ASM parsing
     llvm::InitializeNativeTarget();

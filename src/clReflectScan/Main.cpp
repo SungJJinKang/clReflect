@@ -131,11 +131,11 @@ int main(int argc, const char* argv[])
         return 1;
     }
 	
-	lk_b.unlock();
-
     // Initialize inline ASM parsing
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmParser();
+
+	lk_b.unlock();
 
     // Create the clang tool that parses the input files
     clang::tooling::ClangTool tool(options_parser->getCompilations(), options_parser->getSourcePathList());

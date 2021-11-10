@@ -250,7 +250,7 @@ namespace
         // TODO: Flag for marking custom saves on a field
         if (field->attributes.size != 0)
         {
-            static unsigned int hash = clcpp::internal::HashNameString("save_vbin");
+            thread_local static unsigned int hash = clcpp::internal::HashNameString("save_vbin");
             if (const clcpp::Attribute* attr = clcpp::FindPrimitive(field->attributes, hash))
             {
                 // Call the function to write data
@@ -504,7 +504,7 @@ namespace
         // TODO: Flag for marking custom loads on a field
         if (field->attributes.size != 0)
         {
-            static unsigned int hash = clcpp::internal::HashNameString("load_vbin");
+            thread_local static unsigned int hash = clcpp::internal::HashNameString("load_vbin");
             if (const clcpp::Attribute* attr = clcpp::FindPrimitive(field->attributes, hash))
             {
                 int end_pos = in.GetBytesRead() + header.data_size;

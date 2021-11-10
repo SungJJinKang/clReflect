@@ -15,7 +15,7 @@
 
 char* ReadLine(FILE* fp)
 {
-	static char line[4096];
+	thread_local static char line[4096];
 
 	// Loop reading characters until EOF or EOL
 	int pos = 0;
@@ -47,7 +47,7 @@ char* ReadLine(FILE* fp)
 const char* itoa(unsigned int value)
 {
 	static const int MAX_SZ = 20;
-	static char text[MAX_SZ];
+	thread_local static char text[MAX_SZ];
 #ifdef _MSC_VER
 	return _itoa(value, text, 10);
 #else
@@ -60,7 +60,7 @@ const char* itoa(unsigned int value)
 const char* itohex(unsigned int value)
 {
 	static const int MAX_SZ = 9;
-	static char text[MAX_SZ];
+	thread_local static char text[MAX_SZ];
 
 	// Null terminate and start at the end
 	text[MAX_SZ - 1] = 0;

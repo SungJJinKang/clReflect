@@ -537,9 +537,9 @@ namespace
 
         // Look for a reflection spec as the first attribute
         size_t attr_search_start = 0;
-        static unsigned int reflect_hash = clcpp::internal::HashNameString("reflect");
-        static unsigned int reflect_part_hash = clcpp::internal::HashNameString("reflect_part");
-        static unsigned int noreflect_hash = clcpp::internal::HashNameString("noreflect");
+        thread_local static unsigned int reflect_hash = clcpp::internal::HashNameString("reflect");
+        thread_local static unsigned int reflect_part_hash = clcpp::internal::HashNameString("reflect_part");
+        thread_local static unsigned int noreflect_hash = clcpp::internal::HashNameString("noreflect");
         if (attributes.size())
         {
             unsigned int name_hash = attributes[0].second->name.hash;

@@ -15,7 +15,7 @@
 
 // Store this here, rather than using GetTypeNameHash so that this library
 // can be used without generating an implementation of GetTypeNameHash.
-static unsigned int g_ObjectGroupHash = clcpp::internal::HashNameString("clobj::ObjectGroup");
+thread_local static unsigned int g_ObjectGroupHash = clcpp::internal::HashNameString("clobj::ObjectGroup");
 
 
 struct clobj::ObjectGroup::HashEntry

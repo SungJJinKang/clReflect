@@ -54,7 +54,7 @@ namespace
         const char* GetText() const
         {
             // Copy locally to a static string and return that after null terminating
-            static char text[1024];
+            thread_local static char text[1024];
             int l = length >= sizeof(text) ? sizeof(text) - 1 : length;
             strncpy(text, ptr, l);
             text[l] = 0;

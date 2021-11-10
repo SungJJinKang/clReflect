@@ -569,7 +569,7 @@ namespace
     int ReturnParameterIndex(const clcpp::CArray<const clcpp::Field*>& parameters)
     {
         // Linear search for the named return value
-        static unsigned int return_hash = clcpp::internal::HashNameString("return");
+        thread_local static unsigned int return_hash = clcpp::internal::HashNameString("return");
         for (unsigned int i = 0; i < parameters.size; i++)
         {
             if (parameters[i]->name.hash == return_hash)
@@ -781,15 +781,15 @@ namespace
     unsigned int GetFlagAttributeBits(const clcpp::CArray<const clcpp::Attribute*>& attributes)
     {
         // Cache attribute names
-        static unsigned int disk_transient_hash = clcpp::internal::HashNameString("disk_transient");
-        static unsigned int network_transient_hash = clcpp::internal::HashNameString("network_transient");
-        static unsigned int replicate_transient_hash = clcpp::internal::HashNameString("replicate_transient");
-        static unsigned int export_transient_hash = clcpp::internal::HashNameString("export_transient");
-        static unsigned int transient_hash = clcpp::internal::HashNameString("transient");
-        static unsigned int pre_save_hash = clcpp::internal::HashNameString("pre_save");
-        static unsigned int post_load_hash = clcpp::internal::HashNameString("post_load");
-        static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
-        static unsigned int replicate_hash = clcpp::internal::HashNameString("replicate");
+        thread_local static unsigned int disk_transient_hash = clcpp::internal::HashNameString("disk_transient");
+        thread_local static unsigned int network_transient_hash = clcpp::internal::HashNameString("network_transient");
+        thread_local static unsigned int replicate_transient_hash = clcpp::internal::HashNameString("replicate_transient");
+        thread_local static unsigned int export_transient_hash = clcpp::internal::HashNameString("export_transient");
+        thread_local static unsigned int transient_hash = clcpp::internal::HashNameString("transient");
+        thread_local static unsigned int pre_save_hash = clcpp::internal::HashNameString("pre_save");
+        thread_local static unsigned int post_load_hash = clcpp::internal::HashNameString("post_load");
+        thread_local static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
+        thread_local static unsigned int replicate_hash = clcpp::internal::HashNameString("replicate");
 
         // Merge all detected common flags
         unsigned int bits = 0;
@@ -842,8 +842,8 @@ namespace
 
     unsigned int GetInheritedFlagAttributes(clcpp::Class& class_prim)
     {
-        static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
-        static unsigned int custom_flag_inherit = clcpp::internal::HashNameString("custom_flag_inherit");
+        thread_local static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
+        thread_local static unsigned int custom_flag_inherit = clcpp::internal::HashNameString("custom_flag_inherit");
 
         // Collect all custom attribute bits and set the mask determining inheritance
         unsigned int custom_flags = 0, custom_flags_mask = 0;

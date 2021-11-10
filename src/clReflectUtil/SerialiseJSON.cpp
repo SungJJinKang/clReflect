@@ -113,7 +113,7 @@ namespace
             const clcpp::Enum* enum_type = type->AsEnum();
 
             // Is the enum a series of flags?
-            static unsigned int hash = clcpp::internal::HashNameString("flags");
+            thread_local static unsigned int hash = clcpp::internal::HashNameString("flags");
             bool are_flags = clcpp::FindPrimitive(enum_type->attributes, hash) != nullptr;
             if (are_flags)
             {
@@ -338,7 +338,7 @@ namespace
             if ((class_type->flag_attributes & attrFlag_CustomLoad) != 0)
             {
                 // Look it up
-                static unsigned int hash = clcpp::internal::HashNameString("load_json");
+                thread_local static unsigned int hash = clcpp::internal::HashNameString("load_json");
                 if (const clcpp::Attribute* attr = clcpp::FindPrimitive(class_type->attributes, hash))
                 {
                     const clcpp::PrimitiveAttribute* name_attr = attr->AsPrimitiveAttribute();
@@ -536,7 +536,7 @@ namespace
             // Run any attached post-load functions
             if ((class_type->flag_attributes & attrFlag_PostLoad) != 0)
             {
-                static unsigned int hash = clcpp::internal::HashNameString("post_load");
+                thread_local static unsigned int hash = clcpp::internal::HashNameString("post_load");
                 if (const clcpp::Attribute* attr = clcpp::FindPrimitive(class_type->attributes, hash))
                 {
                     const clcpp::PrimitiveAttribute* name_attr = attr->AsPrimitiveAttribute();
@@ -729,7 +729,7 @@ namespace
         int value = *reinterpret_cast<const int*>(object);
 
         // Is the enum a series of flags?
-        static unsigned int hash = clcpp::internal::HashNameString("flags");
+        thread_local static unsigned int hash = clcpp::internal::HashNameString("flags");
         bool are_flags = clcpp::FindPrimitive(enum_type->attributes, hash) != nullptr;
         if (are_flags && value != 0)
         {
@@ -1068,7 +1068,7 @@ namespace
         if ((class_type->flag_attributes & attrFlag_CustomSave) != 0)
         {
             // Look it up
-            static unsigned int hash = clcpp::internal::HashNameString("save_json");
+            thread_local static unsigned int hash = clcpp::internal::HashNameString("save_json");
             if (const clcpp::Attribute* attr = clcpp::FindPrimitive(class_type->attributes, hash))
             {
                 const clcpp::PrimitiveAttribute* name_attr = attr->AsPrimitiveAttribute();
@@ -1100,7 +1100,7 @@ namespace
         // Call any attached pre-save function
         if ((class_type->flag_attributes & attrFlag_PreSave) != 0)
         {
-            static unsigned int hash = clcpp::internal::HashNameString("pre_save");
+            thread_local static unsigned int hash = clcpp::internal::HashNameString("pre_save");
             if (const clcpp::Attribute* attr = clcpp::FindPrimitive(class_type->attributes, hash))
             {
                 const clcpp::PrimitiveAttribute* name_attr = attr->AsPrimitiveAttribute();

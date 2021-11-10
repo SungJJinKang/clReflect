@@ -97,7 +97,7 @@ void cldb::Database::AddTypeInheritance(const Name& derived_type, const Name& ba
 const cldb::Name& cldb::Database::GetName(const char* text)
 {
 	// Check for nullptr and empty string representations of a "noname"
-	static Name noname;
+	thread_local static Name noname;
 	if (text == 0)
 	{
 		return noname;
@@ -129,7 +129,7 @@ const cldb::Name& cldb::Database::GetName(u32 hash) const
 	NameMap::const_iterator i = m_Names.find(hash);
 	if (i == m_Names.end())
 	{
-		static Name noname;
+		thread_local static Name noname;
 		return noname;
 	}
 	return i->second;

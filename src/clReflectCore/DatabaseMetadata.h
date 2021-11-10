@@ -52,7 +52,7 @@ namespace cldb
         template <typename FieldType, typename ObjectType>
         struct OffsetOfImpl
         {
-            static ObjectType object;
+            thread_local static ObjectType object;
             static constexpr size_t offset(FieldType ObjectType::*member)
             {
                 return size_t(&(OffsetOfImpl<FieldType, ObjectType>::object.*member)) -
@@ -60,7 +60,7 @@ namespace cldb
             }
         };
         template <typename FieldType, typename ObjectType>
-        ObjectType OffsetOfImpl<FieldType, ObjectType>::object;
+        thread_local ObjectType OffsetOfImpl<FieldType, ObjectType>::object;
 
         template <typename FieldType, typename ObjectType>
         inline constexpr size_t OffsetOf(FieldType ObjectType::*member)

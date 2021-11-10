@@ -308,16 +308,25 @@ CLCPP_API void clcpp::internal::Assert(bool expression)
 {
     if (expression == false)
     {
+
 #if defined(_M_IX86)
 
-#if defined(CLCPP_USING_MSVC)
+    #if defined(CLCPP_USING_MSVC)
         __asm
         {
             int 3h
         }
-#else
+    #else
         asm("int $0x3\n");
-#endif // CLCPP_USING_MSVC
+    #endif
+
+#else
+
+    #if defined(CLCPP_USING_MSVC)
+        __debugbreak();
+    #else
+        __builtin_trap();
+    #endif
 
 #endif
 

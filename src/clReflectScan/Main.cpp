@@ -135,16 +135,21 @@ int main(int argc, const char* argv[])
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmParser();
 
-	lk_b.unlock();
-
     // Create the clang tool that parses the input files
     clang::tooling::ClangTool tool(options_parser->getCompilations(), options_parser->getSourcePathList());
 
+	const std::string outputFilePath = Output;
+	const std::string ast_logFilePath = ASTLog;
+	const std::string spec_logFilePath = ReflectionSpecLog;
+	const bool _Timing = Timing;
+
+	lk_b.unlock();
+
     float prologue = clock();
 
-    ReflectionSpecs reflection_specs(ReflectionSpecLog);
+    ReflectionSpecs reflection_specs(spec_logFilePath);
     cldb::Database db;
-    ASTConsumer ast_consumer(db, reflection_specs, ASTLog);
+    ASTConsumer ast_consumer(db, reflection_specs, ast_logFilePath);
 
     float parsing, specs;
 
@@ -176,15 +181,15 @@ int main(int argc, const char* argv[])
     }
 
     // Write to a text/binary database depending upon extension
-    if (Output != "")
+    if (outputFilePath != "")
     {
-        WriteDatabase(db, Output);
+        WriteDatabase(db, outputFilePath);
     }
 
     float end = clock();
 
     // Print some rough profiling info
-    if (Timing)
+    if (_Timing)
     {
         printf("Prologue:   %.3f\n", (prologue - start) / CLOCKS_PER_SEC);
         printf("Parsing:    %.3f\n", (parsing - prologue) / CLOCKS_PER_SEC);

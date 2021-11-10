@@ -62,7 +62,7 @@ namespace logging
 
 
 #define LOG_GET_STREAM_HANDLE(name)											\
-	static logging::StreamHandle handle = logging::GetStreamHandle(#name);
+	thread_local static logging::StreamHandle handle = logging::GetStreamHandle(#name);
 
 
 //

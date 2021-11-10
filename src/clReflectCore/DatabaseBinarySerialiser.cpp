@@ -217,7 +217,7 @@ namespace
 
 void cldb::WriteBinaryDatabase(const char* filename, const Database& db)
 {
-	FILE* fp = fopen(filename, "wb");
+	FILE* fp = fopen(filename, "wbc");
 
 	// Write the header
 	Write(fp, FILE_HEADER);
@@ -248,6 +248,7 @@ void cldb::WriteBinaryDatabase(const char* filename, const Database& db)
 
 	WriteTable<cldb::TypeInheritance>(fp, db, dbtypes);
 
+	fflush(fp);
 	fclose(fp);
 }
 

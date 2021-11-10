@@ -1421,7 +1421,7 @@ void SaveCppExport(CppExport& cppexp, const char* filename)
     relocator.MakeRelative();
 
     // Open the output file
-    FILE* fp = fopen(filename, "wb");
+    FILE* fp = fopen(filename, "wbc");
     if (fp == 0)
     {
         return;
@@ -1470,6 +1470,7 @@ void SaveCppExport(CppExport& cppexp, const char* filename)
     // Write the relocations
     fwrite(&(relocations.front()), sizeof(PtrRelocation) * relocations.size(), 1, fp);
 
+	fflush(fp);
     fclose(fp);
 }
 

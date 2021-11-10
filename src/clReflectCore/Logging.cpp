@@ -150,7 +150,7 @@ namespace
 	// Each stream object is allocated independently of the others.
 	//
 	typedef std::map<const char*, StreamSet> StreamMap;
-	StreamMap g_StreamMap;
+	thread_local StreamMap g_StreamMap;
 
 
 	void DeleteAllStreams()

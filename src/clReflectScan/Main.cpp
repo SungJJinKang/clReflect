@@ -110,6 +110,8 @@ int main(int argc, const char* argv[])
 
     LOG_TO_STDOUT(main, ALL);
 
+	std::unique_lock<std::mutex> lk_b(CommonOptionsParserMutex);
+
     // Command-line options
     static llvm::cl::OptionCategory ToolCategoryOption("clreflect options");
     static llvm::cl::cat ToolCategory(ToolCategoryOption);
@@ -120,17 +122,16 @@ int main(int argc, const char* argv[])
     static llvm::cl::opt<std::string> Output("output", llvm::cl::desc("Specify database output file, depending on extension"),
                                              ToolCategory, llvm::cl::value_desc("filename"));
     static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
-
-    std::unique_lock<std::mutex> lk_b(CommonOptionsParserMutex);
-
+	
     // Parse command-line options
     auto options_parser = clang::tooling::CommonOptionsParser::create(argc, argv, ToolCategoryOption, llvm::cl::OneOrMore);
-    lk_b.unlock();
-    
+  
     if (!options_parser)
     {
         return 1;
     }
+	
+	lk_b.unlock();
 
     // Initialize inline ASM parsing
     llvm::InitializeNativeTarget();

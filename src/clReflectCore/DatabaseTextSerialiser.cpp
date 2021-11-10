@@ -267,7 +267,7 @@ namespace
 
 void cldb::WriteTextDatabase(const char* filename, const Database& db)
 {
-	FILE* fp = fopen(filename, "w");
+	FILE* fp = fopen(filename, "wc");
 
 	// Write the header
 	fputs("\nclReflect Database\n", fp);
@@ -300,6 +300,7 @@ void cldb::WriteTextDatabase(const char* filename, const Database& db)
 
 	WritePrimitives<TypeInheritance>(fp, db, WriteTypeInheritance, "Inheritance", "Name\t\tDerived\t\tBase");
 
+	fflush(fp);
 	fclose(fp);
 }
 

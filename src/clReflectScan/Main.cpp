@@ -223,7 +223,7 @@ Argvs argvSplit(const char* string, const char delimiter)
 	for (i = 0; i < count; i++)
 	{
 		j = 0;
-		while (string[j] != delimiter)
+		while (string[j] != delimiter && string[j] != '\0')
 			j++;
 		j++;
 		*array = (char*)malloc(sizeof(char) * j);

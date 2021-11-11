@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\Main.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\Test.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestArrays.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestAttributes.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestClassImpl.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestCollections.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestFunctionSerialise.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestOffsets.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestReflectionSpecs.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestSerialise.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestSerialiseJSON.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestTemplates.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\TestTypedefs.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\clcppcodegen.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\a97047628d6305ff0c8d67d6892ccd90\clReflectTest.csv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\4d9bbe990311bedcfbea16b144aa37ac\clReflectTest.cppbin.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\build_x86\CMakeFiles\f58864c2baff0b1c6e9edc15b0860f7c\clReflectGenCppbin.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\clReflect\src\clReflectTest\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\clReflect\build_x86\src\clReflectTest\CMakeFiles\clReflectGenCppbin" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{69DB10BE-CD1F-3480-812A-B99AD2326B43}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,3 +1,13 @@
+//
+// ===============================================================================
+// clReflect, UtilityHeaderGen.cpp - First pass traversal of the clang AST for C++,
+// locating reflection specifications.
+// -------------------------------------------------------------------------------
+// Copyright : SungJJinKang
+// ===============================================================================
+//
+
+
 #include "UtilityHeaderGen.h"
 
 #include <clReflectCore/Logging.h>
@@ -162,26 +172,51 @@ void UtilityHeaderGen::GenUtilityHeader
 	extensionDotPos = sourceFilePath.find_last_of('.');
 	if (extensionDotPos != std::string::npos)
 	{
-		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".h";
+		const std::string headerPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".h";
+		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +"_generated.h";
 
 		// Check types declared in outputPath
 		// Check record_decl->getLocation()
 
+
+		// 1. check if rootclass_typename exist looping db::types
+		// find all classes and enums and structs.. declared in sourceFilePath.h
+
+		// 2. define macros like GENERATED_BODY_DOOMS_GRAPHICS_GRAPHICS_SERVER(). "::" can't be contained in macros, so we use "__"
+
+		// 2. generate hash value and template function like clreflect_compiletime_gettype.cpp
+
+
 		CodeGen cg;
+
+		// Generate arrays
+		cg.Line("// Utility Header File ( Don't Edit this )");
+		cg.Line("SourceFilePath : %s", sourceFilePath.c_str());
+		cg.Line();
+		cg.Line();
+
+		const std::string classFullNameMacros = ConvertNameToMacrobableName("test_base_chain::G"); //test
+		const std::string classShortNameMacros = ConvertNameToMacrobableName("G"); //test
+
+		// define full name macros. you should wrtie namespace with this. ex) GENERATE_BODY_test_base_chain__G
+		const std::string fullNamebodyMacros = "GENERATE_BODY_" + classFullNameMacros;
+		cg.Line("#ifdef %s", outputPath.c_str());
+		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), headerPath.c_str());
+		cg.Line("#endif");
+
+		cg.Line("#ifdef %s", fullNamebodyMacros.c_str());
+		cg.Line("#error \"%s already included....\"", fullNamebodyMacros.c_str());
+		cg.Line("#endif");
+
+
+		cg.Line("#undef %s", fullNamebodyMacros.c_str());
+		cg.Line("#define %s \\", fullNamebodyMacros.c_str());
 
 		if (rootclass_typename.empty() == false)
 		{
-			// 1. check if rootclass_typename exist looping db::types
-			// find all classes and enums and structs.. declared in sourceFilePath.h
+			// 3. generate base chain data ( implemented 100% )
 
-			// 2. define macros like GENERATED_BODY_DOOMS_GRAPHICS_GRAPHICS_SERVER(). "::" can't be contained in macros, so we use "__"
-
-			// 2. generate hash value and template function like clreflect_compiletime_gettype.cpp
-
-			// 3. generate base chain data
-
-			// 4. generate reflection variable, function, static functions, static variable
-
+			
 
 			// test codes
 			std::vector<cldb::u32> baseChainList;
@@ -207,6 +242,13 @@ void UtilityHeaderGen::GenUtilityHeader
 			// create base chain data if rootclass_typename is not empty
 
 		}
+
+		// 4. generate reflection variable, function, static functions, static variable
+
+		// define short name macros for programer. you can except namespace with this. ex) GENERATE_BODY_G
+		const std::string shortNamebodyMacros = "GENERATE_BODY_" + classShortNameMacros;
+		cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
+
 		cg.WriteToFile(outputPath.c_str());
 	}
 	else

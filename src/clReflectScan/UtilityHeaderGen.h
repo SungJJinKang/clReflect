@@ -1,5 +1,14 @@
 #pragma once
 
+//
+// ===============================================================================
+// clReflect, UtilityHeaderGen.h - First pass traversal of the clang AST for C++,
+// locating reflection specifications.
+// -------------------------------------------------------------------------------
+// Copyright : SungJJinKang
+// ===============================================================================
+//
+
 #include "clReflectCore/Database.h"
 #include "clReflectCore/CodeGen.h"
 

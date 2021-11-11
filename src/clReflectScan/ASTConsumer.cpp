@@ -901,8 +901,17 @@ void ASTConsumer::AddEnumDecl(clang::NamedDecl* decl, const std::string& name, c
         // Clang doesn't construct the enum name as a C++ compiler would see it so do that first
         // NOTE: May want to revisit this later
         std::string constant_name = constant_decl->getNameAsString();
-        if (parent_name != "")
-            constant_name = parent_name + "::" + constant_name;
+        if (name != "")
+            constant_name = name + "::" + constant_name; 
+            // enum's elements contain enum's full name
+            // ex)
+            // namespace testNamespace
+            // {
+            //      enum TestEnum
+            //      { TestEnumElement1, TestEnumElement2 };
+            // }
+            // testNamespace::TestEnum::TestEnumElement1's name is testNamespace::TestEnum::TestEnumElement1
+            // testNamespace::TestEnum::TestEnumElement2's name is testNamespace::TestEnum::TestEnumElement2
 
         // Add to the database
         m_DB.AddPrimitive(cldb::EnumConstant(m_DB.GetName(constant_name.c_str()), m_DB.GetName(name.c_str()), value_int));

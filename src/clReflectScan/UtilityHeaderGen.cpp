@@ -45,6 +45,21 @@ std::vector<cldb::u32> UtilityHeaderGen::GetBaseClassesName(const cldb::u32 sear
 	return baseClassList.NameHashList;
 }
 
+std::string UtilityHeaderGen::ConvertNameToMacrobableName(const std::string & name)
+{
+	// "::" can't be contained in macros, so we use "__"
+	std::string result = name;
+	for (size_t i = 0; i < result.size(); i++)
+	{
+		if (result[i] == ':')
+		{
+			result[i] = '_';
+		}
+	}
+
+	return result;
+}
+
 bool UtilityHeaderGen::GenerateBaseChainList
 (
 	const cldb::u32 targetClassNameHash,
@@ -62,7 +77,7 @@ bool UtilityHeaderGen::GenerateBaseChainList
 	else
 	{
 		std::vector<cldb::u32> baseClassList = GetBaseClassesName(targetClassNameHash, db);
-		if (baseChainList.empty() == false)
+		if (baseClassList.empty() == false)
 		{
 			for (cldb::u32& baseClassName : baseClassList)
 			{
@@ -95,38 +110,38 @@ cldb::Name UtilityHeaderGen::FindTargetClass(const std::string & className, cldb
 	return cldb::Name();
 }
 
-void UtilityHeaderGen::WriteBaseChainList(const cldb::Name className, CodeGen& cg, const std::vector<cldb::Name>& baseChainList)
+void UtilityHeaderGen::WriteBaseChainList(CodeGen& cg, const std::vector<cldb::u32>& baseChainList)
 {
 	assert(baseChainList.empty() == false);
 	if (baseChainList.empty() == false)
 	{
-		cg.Line();
-
-		//std::string text; // you don't need cache it. CodeGen is internally caching text
-		cg.Line("#undef BASE_CHAIN_DATA");
-		cg.Line("#define BASE_CHAIN_DATA ");
+		cg.Line("\\");
 
 		std::string baseChainText;
 		//baseChainText+=
 		for (int index = 0; index < baseChainList.size() - 1; index++) // don't use size_t, it can make underflow
 		{
-			baseChainText += baseChainList[index].hash;
+			baseChainText += std::to_string(baseChainList[index]);
 			baseChainText += ", ";
 		}
-		baseChainText += baseChainList[baseChainList.size() - 1].hash;
+		baseChainText += std::to_string(baseChainList[baseChainList.size() - 1]);
 
-		cg.Line("%s;", baseChainText.c_str()); // unsigned long guarantee 32bit
+		cg.Line("private: inline static const unsigned long int BASE_CHAIN_LIST[] { %s }; \\", baseChainText.c_str()); // unsigned long guarantee 32bit
 	}
 }
 
 void UtilityHeaderGen::GenUtilityHeader
 (
 	const std::string& sourceFilePath, 
-	const std::string& outputFilePath, 
 	const std::string& rootclass_typename, 
 	cldb::Database & db
 )
 {
+	if (sourceFilePath.empty() == true || sourceFilePath[0] == ' ')
+	{
+		return;
+	}
+
 	size_t lastBackSlashPos = sourceFilePath.find_last_of('\\');
 	if (lastBackSlashPos == std::string::npos)
 	{
@@ -137,11 +152,70 @@ void UtilityHeaderGen::GenUtilityHeader
 		? sourceFilePath.substr(lastBackSlashPos + 1) : SourceFileNameWithExtension;
 
 	std::string SourceFileNameWithoutExtension = SourceFileNameWithExtension; // TargetClassName
-	const size_t extensionDotPos = SourceFileNameWithExtension.find_last_of('.');
+	size_t extensionDotPos = SourceFileNameWithExtension.find_last_of('.');
 	if (lastBackSlashPos != std::string::npos)
 	{
 		SourceFileNameWithoutExtension = std::string(SourceFileNameWithoutExtension.begin(), SourceFileNameWithoutExtension.begin() + extensionDotPos);
 	}
+
+
+	extensionDotPos = sourceFilePath.find_last_of('.');
+	if (extensionDotPos != std::string::npos)
+	{
+		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".h";
+
+		// Check types declared in outputPath
+		// Check record_decl->getLocation()
+
+		CodeGen cg;
+
+		if (rootclass_typename.empty() == false)
+		{
+			// 1. check if rootclass_typename exist looping db::types
+			// find all classes and enums and structs.. declared in sourceFilePath.h
+
+			// 2. define macros like GENERATED_BODY_DOOMS_GRAPHICS_GRAPHICS_SERVER(). "::" can't be contained in macros, so we use "__"
+
+			// 2. generate hash value and template function like clreflect_compiletime_gettype.cpp
+
+			// 3. generate base chain data
+
+			// 4. generate reflection variable, function, static functions, static variable
+
+
+			// test codes
+			std::vector<cldb::u32> baseChainList;
+			GenerateBaseChainList
+			(
+				clcpp::internal::HashNameString("test_base_chain::G"),
+				clcpp::internal::HashNameString(rootclass_typename.c_str()),
+				db,
+				baseChainList
+			);
+
+			WriteBaseChainList(cg, baseChainList);
+
+			assert(baseChainList[0] == clcpp::internal::HashNameString("test_base_chain::G"));
+			assert(baseChainList[0] != clcpp::internal::HashNameString("test_base_chain::TEST3"));
+			assert(baseChainList[1] == clcpp::internal::HashNameString("test_base_chain::F"));
+			assert(baseChainList[2] == clcpp::internal::HashNameString("test_base_chain::D"));
+			assert(baseChainList[3] == clcpp::internal::HashNameString("test_base_chain::C"));
+			assert(baseChainList[4] == clcpp::internal::HashNameString("test_base_chain::B"));
+			assert(baseChainList[4] != clcpp::internal::HashNameString("test_base_chain::TEST2"));
+			assert(baseChainList[4] != clcpp::internal::HashNameString("test_base_chain::TEST1"));
+			assert(baseChainList.size() == 5);
+			// create base chain data if rootclass_typename is not empty
+
+		}
+		cg.WriteToFile(outputPath.c_str());
+	}
+	else
+	{
+		LOG(warnings, INFO, "fail to generate UtilityHeader output path");
+	}
+
+
+	
 	/*
 	const cldb::Name targetClassName = 
 
@@ -190,8 +264,9 @@ void UtilityHeaderGen::GenUtilityHeader
 	cg.Line("#define GENERATE_BODY \\");
 	cg.Line("BASE_CHAIN_DATA \\");
 
-	cg.WriteToFile(outputFilePath.c_str());
 	*/
+
+	
 }
 
 // 개발 방향 :

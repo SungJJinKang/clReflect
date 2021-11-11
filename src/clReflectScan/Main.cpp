@@ -125,8 +125,6 @@ int main(int argc, const char* argv[])
                                              ToolCategory, llvm::cl::value_desc("filename"));
 	static llvm::cl::opt<std::string> RootClassTypeName("rootClass_typeName", llvm::cl::desc("Specify Root class typename including namespace"),
 		ToolCategory, llvm::cl::value_desc("type"));
-	static llvm::cl::opt<std::string> UtilityHeaderOutput("utilityHeaderOutput", llvm::cl::desc("Specify utility header file"),
-		ToolCategory, llvm::cl::value_desc("filename"));
     static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
 	
     // Parse command-line options
@@ -144,9 +142,8 @@ int main(int argc, const char* argv[])
     // Create the clang tool that parses the input files
     clang::tooling::ClangTool tool(options_parser->getCompilations(), options_parser->getSourcePathList());
 	
-	const std::vector<std::string> sourceFilePath = options_parser->getSourcePathList();
+	const std::vector<std::string> sourceFilePathList = options_parser->getSourcePathList();
 	const std::string outputFilePath = Output;
-	const std::string utilityHeaderOutputFilePath = UtilityHeaderOutput;
 	const std::string ast_logFilePath = ASTLog;
 	const std::string spec_logFilePath = ReflectionSpecLog;
 	const std::string rootclass_typename = RootClassTypeName;
@@ -195,17 +192,17 @@ int main(int argc, const char* argv[])
         WriteDatabase(db, outputFilePath);
     }
 
-	/*
-	if (utilityHeaderOutputFilePath != "")
+	if (rootclass_typename.empty() == true)
 	{
-		UtilityHeaderGen utilityHeadergen{};
-		utilityHeadergen.GenUtilityHeader(sourceFilePath, outputFilePath, rootclass_typename, db);
+		LOG(warnings, INFO, "rootClass_typeName is not found");
 	}
-	else
+	
+	UtilityHeaderGen utilityHeadergen{};
+	for (const std::string& sourceFilePath : sourceFilePathList)
 	{
-		LOG(warnings, INFO, "UtilityHeader Output File Path is not found");
+		utilityHeadergen.GenUtilityHeader(sourceFilePath, rootclass_typename, db);
 	}
-	*/
+	
 
     float end = clock();
 

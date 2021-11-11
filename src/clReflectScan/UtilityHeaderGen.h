@@ -19,7 +19,9 @@ private:
 	thread_local static std::map<cldb::u32, ksj::BaseClassList> BaseClassList; // key : Derived Class's Name Hash, Value : Base Classes of Derived Class's Name Hash
 
 	static std::vector<cldb::u32> GetBaseClassesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db);
-	
+
+	// "::" can't be contained in macros, so we use "__"
+	static std::string ConvertNameToMacrobableName(const std::string& name);
 	
 	// return BaseChainList in baseChainList
 	// RootClass is stored at first pos of baseChainList
@@ -33,7 +35,7 @@ private:
 		cldb::Database& db,
 		std::vector<cldb::u32>& baseChainList
 	);
-	void WriteBaseChainList(const cldb::Name className, CodeGen& cg, const std::vector<cldb::Name>& baseChainList);
+	void WriteBaseChainList(CodeGen& cg, const std::vector<cldb::u32>& baseChainList);
 	cldb::Name FindTargetClass(const std::string& className, cldb::Database& db);
 	
 public:
@@ -46,7 +48,6 @@ public:
 	void GenUtilityHeader
 	(
 		const std::string& sourceFilePath, 
-		const std::string& outputFilePath,
 		const std::string& rootclass_typename,
 		cldb::Database& db
 	);

@@ -1,6 +1,12 @@
 #include "UtilityHeaderGen.h"
 
 #include <clReflectCore/Logging.h>
+#include <clReflectCore/FileUtils.h>
+#include <clcpp/clcpp.h>
+
+#include <cassert>
+
+using namespace cldb;
 
 UtilityHeaderGen::UtilityHeaderGen()
 {
@@ -8,6 +14,79 @@ UtilityHeaderGen::UtilityHeaderGen()
 	LOG_TO_STDOUT(warnings, INFO);
 
 	
+}
+
+std::vector<cldb::Name> UtilityHeaderGen::GetBaseClassesName(const cldb::Name& searchDerivedClassName, cldb::Database& db)
+{
+	std::vector<cldb::Name> result;
+
+	ksj::BaseClassList& baseClassList = BaseClassList[searchDerivedClassName.hash];
+	if (baseClassList.isInitialized == false)
+	{
+		for (cldb::DBMap<cldb::TypeInheritance>::const_iterator i = db.m_TypeInheritances.begin(); i != db.m_TypeInheritances.end(); ++i)
+		{
+			// This code can be slow.
+			// But I want to edit existing codes as little as possible.
+
+			// cldb::DBMap<cldb::TypeInheritance>'s TypeInheritance guarantee uniqueness. it never have same typeInheritance
+			const cldb::TypeInheritance& inherit = i->second;
+
+			if (searchDerivedClassName.hash == inherit.derived_type.hash) // hash guarantee uniqueness
+			{
+				baseClassList.NameHashList.push_back(inherit.base_type.hash);
+			}
+		}
+
+		baseClassList.isInitialized = true;
+	}
+	
+}
+
+bool UtilityHeaderGen::GenerateBaseChainList
+(
+	const cldb::Name& targetClassName, 
+	const cldb::Name& targetRootClassName, 
+	cldb::Database& db,
+	std::vector<cldb::Name>& baseChainList
+)
+{
+	if (targetClassName == targetRootClassName)
+	{
+		//If root class
+		baseChainList.push_back(targetRootClassName);
+		return true;
+	}
+	else
+	{
+		std::vector<cldb::Name> baseClassList = GetBaseClassesName(targetClassName, db);
+		if (baseChainList.empty() == false)
+		{
+			for (cldb::Name& baseClassName : baseClassList)
+			{
+				const bool result = GenerateBaseChainList(baseClassName, targetRootClassName, db, baseChainList);
+				if (result == true)
+				{
+					// Root class is found while travel recursive function!!
+					baseChainList.push_back(baseClassName);
+					return true;
+				}
+			}
+		}
+
+		// everything fails...
+		return false;
+	}	
+}
+
+void UtilityHeaderGen::WriteBaseChainList(CodeGen& cg, const std::vector<cldb::Name>& baseChainList)
+{
+	assert(baseChainList.empty() == false);
+
+	cg.Line();
+
+	cg.Line("#define ")
+
+
 }
 
 void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const std::string& outputFilePath, cldb::Database & db)
@@ -21,14 +100,51 @@ void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const
 	const std::string SourceFileNameWithExtension = (lastBackSlashPos != std::string::npos)
 		? sourceFilePath.substr(lastBackSlashPos + 1) : SourceFileNameWithExtension;
 
-	std::string SourceFileNameWithoutExtension = SourceFileNameWithExtension;
+	std::string SourceFileNameWithoutExtension = SourceFileNameWithExtension; // TargetClassName
 	const size_t extensionDotPos = SourceFileNameWithExtension.find_last_of('.');
 	if (lastBackSlashPos != std::string::npos)
 	{
 		SourceFileNameWithoutExtension = std::string(SourceFileNameWithoutExtension.begin(), SourceFileNameWithoutExtension.begin() + extensionDotPos);
 	}
 
-	const std::string OutputFilePath
+
+
+	CodeGen cg;
+
+	// Generate arrays
+	cg.Line("// Utility Header File ( Don't Edit this )");
+	cg.Line("static const int clcppNbTypes = %d;", primitives.size());
+	cg.Line("static const clcpp::Type* clcppTypePtrs[clcppNbTypes] = { 0 };");
+	cg.Line();
+
+	// Generate initialisation function
+	cg.Line("#ifndef GENERATE_BODY");
+	cg.Line("#define GENERATE_BODY \\");
+
+	cg.Line("void clcppInitGetType(const clcpp::Database* db)");
+	cg.EnterScope();
+	cg.Line("// Populate the type pointer array if a database is specified");
+	cg.Line("if (db != 0)");
+	cg.EnterScope();
+	for (size_t i = 0; i < primitives.size(); i++)
+		cg.Line("clcppTypePtrs[%d] = db->GetType(0x%x);", i, primitives[i].hash);
+	cg.ExitScope();
+	cg.ExitScope();
+	cg.Line();
+
+	ForwardDeclareTypes(cg, namespaces);
+
+	// Generate the implementations
+	cg.Line("// Specialisations for GetType and GetTypeNameHash");
+	cg.Line("namespace clcpp");
+	cg.EnterScope();
+	GenGetTypes(cg, primitives, PT_Type | PT_Class | PT_Struct | PT_EnumClass | PT_EnumStruct);
+	cg.Line("#if defined(CLCPP_USING_MSVC)");
+	GenGetTypes(cg, primitives, PT_Enum);
+	cg.Line("#endif");
+	cg.ExitScope();
+
+	cg.WriteToFile(outputFilePath.c_str());
 }
 
 // 개발 방향 :

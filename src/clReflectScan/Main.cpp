@@ -203,6 +203,10 @@ int main(int argc, const char* argv[])
 		UtilityHeaderGen utilityHeadergen{};
 		utilityHeadergen.GenUtilityHeader(sourceFilePath, outputFilePath, db);
 	}
+	else
+	{
+		LOG(warnings, INFO, "UtilityHeader Output File Path is not found");
+	}
 
     float end = clock();
 

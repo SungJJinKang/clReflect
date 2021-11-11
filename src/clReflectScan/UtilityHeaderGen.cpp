@@ -81,12 +81,21 @@ bool UtilityHeaderGen::GenerateBaseChainList
 void UtilityHeaderGen::WriteBaseChainList(CodeGen& cg, const std::vector<cldb::Name>& baseChainList)
 {
 	assert(baseChainList.empty() == false);
+	if (baseChainList.empty() == false)
+	{
+		cg.Line();
 
-	cg.Line();
+		//std::string text; // you don't need cache it. CodeGen is internally caching text
 
-	cg.Line("#define ")
-
-
+		cg.Line("unsigned long BaseChainList = \\"); // unsigned long guarantee 32bit
+		cg.Line("{"); // unsigned long guarantee 32bit
+		for (int index = 0; index < baseChainList.size() - 1; index++) // don't use size_t, it can make underflow
+		{
+			cg.Line("%d ,", baseChainList[index].hash);
+		}
+		cg.Line("%d", baseChainList[baseChainList.size() - 1].hash);
+		cg.Line("};"); // unsigned long guarantee 32bit
+	}
 }
 
 void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const std::string& outputFilePath, cldb::Database & db)

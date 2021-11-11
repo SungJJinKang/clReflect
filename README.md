@@ -1,8 +1,14 @@
 
-clReflect: C++ Reflection using clang
+Customized clReflect for DoomsEngine : C++ Reflection using clang
 =====================================
 
-- - - 
+- - -
+
+Customized Feature by SungJJinKang
+-------------------------
+
+Generate CompileTime Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)
+
 
 Installation Instructions
 -------------------------

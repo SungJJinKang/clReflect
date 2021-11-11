@@ -8,6 +8,8 @@
 
 using namespace cldb;
 
+thread_local std::map<cldb::u32, ksj::BaseClassList> UtilityHeaderGen::BaseClassList{};
+
 UtilityHeaderGen::UtilityHeaderGen()
 {
 	LOG_TO_STDOUT(utilityHeaderGen, ALL);
@@ -16,13 +18,13 @@ UtilityHeaderGen::UtilityHeaderGen()
 	
 }
 
-std::vector<cldb::Name> UtilityHeaderGen::GetBaseClassesName(const cldb::Name& searchDerivedClassName, cldb::Database& db)
+std::vector<cldb::u32> UtilityHeaderGen::GetBaseClassesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db)
 {
-	std::vector<cldb::Name> result;
-
-	ksj::BaseClassList& baseClassList = BaseClassList[searchDerivedClassName.hash];
+	ksj::BaseClassList& baseClassList = BaseClassList[searchDerivedClassNameHash];
 	if (baseClassList.isInitialized == false)
 	{
+		//This can be optimized if add std::map<u32, std::vector<u32>> variable to cldb::Database
+		//It require some work in cldb::Database::AddTypeInheritance function
 		for (cldb::DBMap<cldb::TypeInheritance>::const_iterator i = db.m_TypeInheritances.begin(); i != db.m_TypeInheritances.end(); ++i)
 		{
 			// This code can be slow.
@@ -31,7 +33,7 @@ std::vector<cldb::Name> UtilityHeaderGen::GetBaseClassesName(const cldb::Name& s
 			// cldb::DBMap<cldb::TypeInheritance>'s TypeInheritance guarantee uniqueness. it never have same typeInheritance
 			const cldb::TypeInheritance& inherit = i->second;
 
-			if (searchDerivedClassName.hash == inherit.derived_type.hash) // hash guarantee uniqueness
+			if (searchDerivedClassNameHash == inherit.derived_type.hash) // hash guarantee uniqueness
 			{
 				baseClassList.NameHashList.push_back(inherit.base_type.hash);
 			}
@@ -40,30 +42,31 @@ std::vector<cldb::Name> UtilityHeaderGen::GetBaseClassesName(const cldb::Name& s
 		baseClassList.isInitialized = true;
 	}
 	
+	return baseClassList.NameHashList;
 }
 
 bool UtilityHeaderGen::GenerateBaseChainList
 (
-	const cldb::Name& targetClassName, 
-	const cldb::Name& targetRootClassName, 
+	const cldb::u32 targetClassNameHash,
+	const cldb::u32 targetRootClassNameHash,
 	cldb::Database& db,
-	std::vector<cldb::Name>& baseChainList
+	std::vector<cldb::u32>& baseChainList
 )
 {
-	if (targetClassName == targetRootClassName)
+	if (targetClassNameHash == targetRootClassNameHash)
 	{
 		//If root class
-		baseChainList.push_back(targetRootClassName);
+		baseChainList.push_back(targetRootClassNameHash);
 		return true;
 	}
 	else
 	{
-		std::vector<cldb::Name> baseClassList = GetBaseClassesName(targetClassName, db);
+		std::vector<cldb::u32> baseClassList = GetBaseClassesName(targetClassNameHash, db);
 		if (baseChainList.empty() == false)
 		{
-			for (cldb::Name& baseClassName : baseClassList)
+			for (cldb::u32& baseClassName : baseClassList)
 			{
-				const bool result = GenerateBaseChainList(baseClassName, targetRootClassName, db, baseChainList);
+				const bool result = GenerateBaseChainList(baseClassName, targetRootClassNameHash, db, baseChainList);
 				if (result == true)
 				{
 					// Root class is found while travel recursive function!!
@@ -78,7 +81,21 @@ bool UtilityHeaderGen::GenerateBaseChainList
 	}	
 }
 
-void UtilityHeaderGen::WriteBaseChainList(CodeGen& cg, const std::vector<cldb::Name>& baseChainList)
+cldb::Name UtilityHeaderGen::FindTargetClass(const std::string & className, cldb::Database & db)
+{
+	std::vector<cldb::Name> targetClassCandidate;
+
+	for (DBMap<Type>::iterator iter = db.m_Types.begin(); iter != db.m_Types.end() ; iter++)
+	{
+		if (iter->second.name.text.find_last_of(className) != std::string::npos)
+		{
+			targetClassCandidate.push_back(iter->second.name);
+		}
+	}
+	return cldb::Name();
+}
+
+void UtilityHeaderGen::WriteBaseChainList(const cldb::Name className, CodeGen& cg, const std::vector<cldb::Name>& baseChainList)
 {
 	assert(baseChainList.empty() == false);
 	if (baseChainList.empty() == false)
@@ -86,19 +103,29 @@ void UtilityHeaderGen::WriteBaseChainList(CodeGen& cg, const std::vector<cldb::N
 		cg.Line();
 
 		//std::string text; // you don't need cache it. CodeGen is internally caching text
+		cg.Line("#undef BASE_CHAIN_DATA");
+		cg.Line("#define BASE_CHAIN_DATA ");
 
-		cg.Line("unsigned long BaseChainList = \\"); // unsigned long guarantee 32bit
-		cg.Line("{"); // unsigned long guarantee 32bit
+		std::string baseChainText;
+		//baseChainText+=
 		for (int index = 0; index < baseChainList.size() - 1; index++) // don't use size_t, it can make underflow
 		{
-			cg.Line("%d ,", baseChainList[index].hash);
+			baseChainText += baseChainList[index].hash;
+			baseChainText += ", ";
 		}
-		cg.Line("%d", baseChainList[baseChainList.size() - 1].hash);
-		cg.Line("};"); // unsigned long guarantee 32bit
+		baseChainText += baseChainList[baseChainList.size() - 1].hash;
+
+		cg.Line("%s;", baseChainText.c_str()); // unsigned long guarantee 32bit
 	}
 }
 
-void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const std::string& outputFilePath, cldb::Database & db)
+void UtilityHeaderGen::GenUtilityHeader
+(
+	const std::string& sourceFilePath, 
+	const std::string& outputFilePath, 
+	const std::string& rootclass_typename, 
+	cldb::Database & db
+)
 {
 	size_t lastBackSlashPos = sourceFilePath.find_last_of('\\');
 	if (lastBackSlashPos == std::string::npos)
@@ -115,9 +142,10 @@ void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const
 	{
 		SourceFileNameWithoutExtension = std::string(SourceFileNameWithoutExtension.begin(), SourceFileNameWithoutExtension.begin() + extensionDotPos);
 	}
+	/*
+	const cldb::Name targetClassName = 
 
-
-
+	
 	CodeGen cg;
 
 	// Generate arrays
@@ -127,7 +155,7 @@ void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const
 	cg.Line();
 
 	// Generate initialisation function
-	cg.Line("#ifndef GENERATE_BODY");
+	cg.Line("#ifndef GENERATE_BODY"); // If this macros is written in first line of header file, following macros will be ingnored
 	cg.Line("#define GENERATE_BODY \\");
 
 	cg.Line("void clcppInitGetType(const clcpp::Database* db)");
@@ -147,13 +175,23 @@ void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const
 	cg.Line("// Specialisations for GetType and GetTypeNameHash");
 	cg.Line("namespace clcpp");
 	cg.EnterScope();
-	GenGetTypes(cg, primitives, PT_Type | PT_Class | PT_Struct | PT_EnumClass | PT_EnumStruct);
+	//GenGetTypes(cg, primitives, PT_Type | PT_Class | PT_Struct | PT_EnumClass | PT_EnumStruct);
 	cg.Line("#if defined(CLCPP_USING_MSVC)");
 	GenGetTypes(cg, primitives, PT_Enum);
 	cg.Line("#endif");
 	cg.ExitScope();
 
+
+	const std::string fileID = "FILE_ID_" + SourceFileNameWithoutExtension;
+	cg.Line("#undef D_FILE_ID");
+	cg.Line("#define D_FILE_ID %s", fileID.c_str());
+
+	cg.Line("#undef GENERATE_BODY ");
+	cg.Line("#define GENERATE_BODY \\");
+	cg.Line("BASE_CHAIN_DATA \\");
+
 	cg.WriteToFile(outputFilePath.c_str());
+	*/
 }
 
 // 개발 방향 :
@@ -166,3 +204,13 @@ void UtilityHeaderGen::GenUtilityHeader(const std::string& sourceFilePath, const
 // ex) BaseChain[] = { 현재 클래스 Hash 값, 부모 클래스 Hash 값.... };
 
 // GENERATE_BODY 매크로도 만들자.
+
+// Reflection 구조체를 가져오는 Static 함수 정의도 넣자.
+
+// 타입명은 같은데 네임스페이스가 다른 경우도 고려되어야한다.
+
+//개발 방향 1 : clscan하는 소스파일에서 확장자만 h로 바꾸어서 해당 header에 선언되어 있는 모든 클래서, 구조체, enum 등 generated.h가 필요한 타입들에 대해 하나의 파일에 다 담자. ( Nice )
+//
+//	고려 사항 : header만 있고 소스파일이 없는 경우? -> 이 경우 generated.h 생성 불가 -> 소스 파일이 없는 경우 에러를 발생시켜야한다.
+//
+//개발 방향 2 : clexport에서 생성 -> 다시 생성해야하는 것을 구분하지 못하는 문제가 발생 -> 결국 모든 header파일에 대한 generated_h를 다시 생성해야한다 -> 끔찍.

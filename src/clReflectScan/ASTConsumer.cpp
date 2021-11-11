@@ -790,6 +790,8 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
         return;
     }
 
+	//volatile auto a = m_ASTContext->getSourceManager().getFilename(record_decl->getLocation());
+
     // Name gets added to the database if it's not already there
     cldb::Name type_name = m_DB.GetName(name.c_str());
 
@@ -842,6 +844,7 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
 
             for (size_t i = 0; i < base_names.size(); i++)
                 LOG_APPEND(ast, INFO, (i == 0) ? " : %s" : ", %s", base_names[i].text.c_str());
+
             LOG_NEWLINE(ast);
 
             // Populate class contents
@@ -865,13 +868,14 @@ void ASTConsumer::AddEnumDecl(clang::NamedDecl* decl, const std::string& name, c
     clang::EnumDecl* enum_decl = llvm::dyn_cast<clang::EnumDecl>(decl);
     assert(enum_decl != 0 && "Failed to cast to enum declaration");
 
-    // Is this a C++11 scoped enum?
+    // Is this a C++11 scoped enum(enum class)?
     cldb::Enum::Scoped scoped = cldb::Enum::Scoped::None;
     const char* scope_tag = "";
     if (enum_decl->isScoped())
     {
         if (enum_decl->isScopedUsingClassTag())
         {
+			//when enum class
             scoped = cldb::Enum::Scoped::Class;
             scope_tag = "class ";
         }

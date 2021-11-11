@@ -153,6 +153,8 @@ namespace cldb
 
 		// Parent scope primitive
 		Name parent;
+
+		//clang::SourceLocation sourceLocation; //don't do this because this classes will stored as memory mapped file in clExport
 	};
 
 

@@ -123,6 +123,8 @@ int main(int argc, const char* argv[])
                                              llvm::cl::value_desc("filename"));
     static llvm::cl::opt<std::string> Output("output", llvm::cl::desc("Specify database output file, depending on extension"),
                                              ToolCategory, llvm::cl::value_desc("filename"));
+	static llvm::cl::opt<std::string> RootClassTypeName("rootClass_typeName", llvm::cl::desc("Specify Root class typename including namespace"),
+		ToolCategory, llvm::cl::value_desc("type"));
 	static llvm::cl::opt<std::string> UtilityHeaderOutput("utilityHeaderOutput", llvm::cl::desc("Specify utility header file"),
 		ToolCategory, llvm::cl::value_desc("filename"));
     static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
@@ -141,18 +143,13 @@ int main(int argc, const char* argv[])
 
     // Create the clang tool that parses the input files
     clang::tooling::ClangTool tool(options_parser->getCompilations(), options_parser->getSourcePathList());
-
-	if (options_parser->getSourcePathList().size() > 1)
-	{
-		LOG(warnings, INFO, "Only One SourceFile is supported");
-		return 1;
-	}
-
-	const std::string sourceFilePath = options_parser->getSourcePathList()[0];
+	
+	const std::vector<std::string> sourceFilePath = options_parser->getSourcePathList();
 	const std::string outputFilePath = Output;
 	const std::string utilityHeaderOutputFilePath = UtilityHeaderOutput;
 	const std::string ast_logFilePath = ASTLog;
 	const std::string spec_logFilePath = ReflectionSpecLog;
+	const std::string rootclass_typename = RootClassTypeName;
 	const bool _Timing = Timing;
 
 	lk_b.unlock();
@@ -198,15 +195,17 @@ int main(int argc, const char* argv[])
         WriteDatabase(db, outputFilePath);
     }
 
+	/*
 	if (utilityHeaderOutputFilePath != "")
 	{
 		UtilityHeaderGen utilityHeadergen{};
-		utilityHeadergen.GenUtilityHeader(sourceFilePath, outputFilePath, db);
+		utilityHeadergen.GenUtilityHeader(sourceFilePath, outputFilePath, rootclass_typename, db);
 	}
 	else
 	{
 		LOG(warnings, INFO, "UtilityHeader Output File Path is not found");
 	}
+	*/
 
     float end = clock();
 

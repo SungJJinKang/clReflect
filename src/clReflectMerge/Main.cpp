@@ -9,8 +9,8 @@
 //
 
 #include "DatabaseMerge.h"
-#include "CodeGen.h"
 
+#include <clReflectCore/CodeGen.h>
 #include <clReflectCore/Arguments.h>
 #include <clReflectCore/Logging.h>
 #include <clReflectCore/Database.h>

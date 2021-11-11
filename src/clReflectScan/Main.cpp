@@ -10,6 +10,7 @@
 
 #include "ASTConsumer.h"
 #include "ReflectionSpecs.h"
+#include "UtilityHeaderGen.h"
 
 #include "clReflectCore/Database.h"
 #include "clReflectCore/DatabaseBinarySerialiser.h"
@@ -109,6 +110,7 @@ int main(int argc, const char* argv[])
     float start = clock();
 
     LOG_TO_STDOUT(main, ALL);
+	LOG_TO_STDOUT(warnings, INFO);
 
 	std::unique_lock<std::mutex> lk_b(CommonOptionsParserMutex);
 
@@ -121,6 +123,8 @@ int main(int argc, const char* argv[])
                                              llvm::cl::value_desc("filename"));
     static llvm::cl::opt<std::string> Output("output", llvm::cl::desc("Specify database output file, depending on extension"),
                                              ToolCategory, llvm::cl::value_desc("filename"));
+	static llvm::cl::opt<std::string> UtilityHeaderOutput("utilityHeaderOutput", llvm::cl::desc("Specify utility header file"),
+		ToolCategory, llvm::cl::value_desc("filename"));
     static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
 	
     // Parse command-line options
@@ -130,7 +134,7 @@ int main(int argc, const char* argv[])
     {
         return 1;
     }
-	
+
     // Initialize inline ASM parsing
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmParser();
@@ -138,7 +142,15 @@ int main(int argc, const char* argv[])
     // Create the clang tool that parses the input files
     clang::tooling::ClangTool tool(options_parser->getCompilations(), options_parser->getSourcePathList());
 
+	if (options_parser->getSourcePathList().size() > 1)
+	{
+		LOG(warnings, INFO, "Only One SourceFile is supported");
+		return 1;
+	}
+
+	const std::string sourceFilePath = options_parser->getSourcePathList()[0];
 	const std::string outputFilePath = Output;
+	const std::string utilityHeaderOutputFilePath = UtilityHeaderOutput;
 	const std::string ast_logFilePath = ASTLog;
 	const std::string spec_logFilePath = ReflectionSpecLog;
 	const bool _Timing = Timing;
@@ -185,6 +197,12 @@ int main(int argc, const char* argv[])
     {
         WriteDatabase(db, outputFilePath);
     }
+
+	if (utilityHeaderOutputFilePath != "")
+	{
+		UtilityHeaderGen utilityHeadergen{};
+		utilityHeadergen.GenUtilityHeader(sourceFilePath, outputFilePath, db);
+	}
 
     float end = clock();
 

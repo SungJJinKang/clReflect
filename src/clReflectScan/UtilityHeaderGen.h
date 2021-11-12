@@ -77,6 +77,7 @@ private:
 
 	//return macros name
 	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName);
+	std::string WriteCurrentTypeStaticHashValueAndFullName(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& targetClassShortName, const std::string& macrobableClassFullTypeName);
 
 	std::vector<cldb::Primitive*> FindTargetTypesName(const std::string& sourceFilePath, const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
 	

@@ -201,8 +201,10 @@ void UtilityHeaderGen::WriteClassMacros
 	cldb::Database & db
 )
 {
+	const std::string targetClassShortTypeName = ConvertFullTypeNameToShortTypeName(targetClassPrimitive->name.text);
+
 	const std::string macrobableClassFullTypeName = ConvertTypeNameToMacrobableTypeName(targetClassPrimitive->name.text); //test
-	const std::string macrobableClassShortTypeName = ConvertTypeNameToMacrobableTypeName(ConvertFullTypeNameToShortTypeName(targetClassPrimitive->name.text)); //test
+	const std::string macrobableClassShortTypeName = ConvertTypeNameToMacrobableTypeName(targetClassShortTypeName); //test
 
 	// define full name macros. you should wrtie namespace with this. ex) GENERATE_BODY_test_base_chain__G
 	const std::string fullNamebodyMacros = "GENERATE_BODY_" + macrobableClassFullTypeName;
@@ -239,6 +241,9 @@ void UtilityHeaderGen::WriteClassMacros
 	// Define Current Type Alias
 	const std::string CurrentTypeAliasMacrosName = WriteCurrentTypeAliasMacros(cg, targetClassPrimitive->name, macrobableClassFullTypeName);
 	macrosNameList.push_back(CurrentTypeAliasMacrosName);
+
+	const std::string CurrentTypeStaticHashValueAndFullName = WriteCurrentTypeStaticHashValueAndFullName(cg, targetClassPrimitive->name, targetClassShortTypeName, macrobableClassFullTypeName);
+	macrosNameList.push_back(CurrentTypeStaticHashValueAndFullName);
 	// 4. generate reflection variable, function, static functions, static variable
 
 	cg.Line();
@@ -266,14 +271,32 @@ std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cl
 	assert(targetClassFullName.hash != 0);
 	assert(macrobableClassFullTypeName.empty() == false);
 
+	cg.Line();
+	cg.Line();
 	const std::string CurrentTypeAliasMacrosName = "CURRENT_TYPE_ALIAS_" + macrobableClassFullTypeName;
-	cg.Line();
-	cg.Line();
 	cg.Line("#undef %s", CurrentTypeAliasMacrosName.c_str());
 	cg.Line("#define %s \\", CurrentTypeAliasMacrosName.c_str());
 	cg.Line("typedef %s Current", targetClassFullName.text.c_str());
 
 	return CurrentTypeAliasMacrosName;
+}
+
+std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen & cg, const cldb::Name & targetClassFullName, const std::string& targetClassShortName, const std::string & macrobableClassFullTypeName)
+{
+	assert(targetClassFullName.text.empty() == false);
+	assert(targetClassFullName.hash != 0);
+	assert(macrobableClassFullTypeName.empty() == false);
+
+	cg.Line();
+	cg.Line();
+	const std::string CurrentTypeStaticHashValueAndFullName = "TYPE_FULLNAME_HASH_VALUE_NAME_STRING_" + macrobableClassFullTypeName;
+	cg.Line("#undef %s", CurrentTypeStaticHashValueAndFullName.c_str());
+	cg.Line("#define %s \\", CurrentTypeStaticHashValueAndFullName.c_str());
+	cg.Line("inline static const unsigned long int TYPE_FULL_NAME_HASH_VALUE = %d; \\", targetClassFullName.hash);
+	cg.Line("inline static const char* const TYPE_FULL_NAME = %d; \\", targetClassFullName.text.c_str());
+	cg.Line("inline static const char* const TYPE_SHORT_NAME = %d; ", targetClassShortName.c_str());
+
+	return CurrentTypeStaticHashValueAndFullName;
 }
 
 std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName

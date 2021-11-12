@@ -57,13 +57,21 @@ std::vector<cldb::Name> UtilityHeaderGen::GetBaseTypesName(const cldb::u32 searc
 	return baseTypeList.BaseTypeNameList;
 }
 
-std::string UtilityHeaderGen::ConvertTypeNameToMacrobableTypeName(const std::string & fullTypeName)
+std::string UtilityHeaderGen::ConvertNameToMacrobableName(const std::string & fullTypeName)
 {
 	// "::" can't be contained in macros, so we use "__"
 	std::string macrobableTypeName = fullTypeName;
 	for (size_t i = 0; i < macrobableTypeName.size(); i++)
 	{
 		if (macrobableTypeName[i] == ':')
+		{
+			macrobableTypeName[i] = '_';
+		}
+		else if (macrobableTypeName[i] == '/')
+		{
+			macrobableTypeName[i] = '_';
+		}
+		else if (macrobableTypeName[i] == '\\')
 		{
 			macrobableTypeName[i] = '_';
 		}
@@ -185,7 +193,7 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 
 		if (baseChainList.size() >= 2)
 		{
-			cg.Line("typedef %s Base", baseChainList[1].text.c_str());
+			cg.Line("public: typedef %s Base;", baseChainList[1].text.c_str());
 		}
 	}
 
@@ -203,8 +211,8 @@ void UtilityHeaderGen::WriteClassMacros
 {
 	const std::string targetClassShortTypeName = ConvertFullTypeNameToShortTypeName(targetClassPrimitive->name.text);
 
-	const std::string macrobableClassFullTypeName = ConvertTypeNameToMacrobableTypeName(targetClassPrimitive->name.text); //test
-	const std::string macrobableClassShortTypeName = ConvertTypeNameToMacrobableTypeName(targetClassShortTypeName); //test
+	const std::string macrobableClassFullTypeName = ConvertNameToMacrobableName(targetClassPrimitive->name.text); //test
+	const std::string macrobableClassShortTypeName = ConvertNameToMacrobableName(targetClassShortTypeName); //test
 
 	// define full name macros. you should wrtie namespace with this. ex) GENERATE_BODY_test_base_chain__G
 	const std::string fullNamebodyMacros = "GENERATE_BODY_" + macrobableClassFullTypeName;
@@ -255,13 +263,17 @@ void UtilityHeaderGen::WriteClassMacros
 	{
 		cg.Line("%s \\", macro.c_str());
 	}
+	cg.Line("private:");
 
 	cg.Line();
 	cg.Line();
 
 	// define short name macros for programer. you can except namespace with this. ex) GENERATE_BODY_G
 	const std::string shortNamebodyMacros = "GENERATE_BODY_" + macrobableClassShortTypeName;
-	cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
+	if (shortNamebodyMacros != fullNamebodyMacros)
+	{
+		cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
+	}
 }
 
 
@@ -276,7 +288,7 @@ std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cl
 	const std::string CurrentTypeAliasMacrosName = "CURRENT_TYPE_ALIAS_" + macrobableClassFullTypeName;
 	cg.Line("#undef %s", CurrentTypeAliasMacrosName.c_str());
 	cg.Line("#define %s \\", CurrentTypeAliasMacrosName.c_str());
-	cg.Line("typedef %s Current", targetClassFullName.text.c_str());
+	cg.Line("public: typedef %s Current;", targetClassFullName.text.c_str());
 
 	return CurrentTypeAliasMacrosName;
 }
@@ -292,9 +304,10 @@ std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen
 	const std::string CurrentTypeStaticHashValueAndFullName = "TYPE_FULLNAME_HASH_VALUE_NAME_STRING_" + macrobableClassFullTypeName;
 	cg.Line("#undef %s", CurrentTypeStaticHashValueAndFullName.c_str());
 	cg.Line("#define %s \\", CurrentTypeStaticHashValueAndFullName.c_str());
+	cg.Line("public: \\");
 	cg.Line("inline static const unsigned long int TYPE_FULL_NAME_HASH_VALUE = %u; \\", targetClassFullName.hash);
-	cg.Line("inline static const char* const TYPE_FULL_NAME = %s; \\", targetClassFullName.text.c_str());
-	cg.Line("inline static const char* const TYPE_SHORT_NAME = %s; ", targetClassShortName.c_str());
+	cg.Line("inline static const char* const TYPE_FULL_NAME = \"%s\"; \\", targetClassFullName.text.c_str());
+	cg.Line("inline static const char* const TYPE_SHORT_NAME = \"%s\"; ", targetClassShortName.c_str());
 
 	return CurrentTypeStaticHashValueAndFullName;
 }
@@ -401,18 +414,27 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line("#pragma once");
 		cg.Line();
 		cg.Line("// Utility Header File ( Don't Edit this )");
-		cg.Line("SourceFilePath : %s", sourceFilePath.c_str());
+		cg.Line("// SourceFilePath : %s", sourceFilePath.c_str());
 		cg.Line();
 		cg.Line();
 
-		cg.Line("#ifdef %s", outputPath.c_str());
-		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), targetHeaderFilePath.c_str());
+
+		const std::string outputPathMacros = ConvertNameToMacrobableName(outputPath);
+		cg.Line("#ifdef %s", outputPathMacros.c_str());
+		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPathMacros.c_str(), ConvertNameToMacrobableName(targetHeaderFilePath).c_str());
 		cg.Line("#endif");
+
+		cg.Line();
+		cg.Line();
+		cg.Line("//-------------------------------------------");
+		cg.Line();
+		cg.Line();
 
 		std::vector<cldb::Primitive*> UtilityHeaderTargetTypeList = FindTargetTypesName(sourceFilePath, targetHeaderFilePath, astConsumer, db);
 
 		for (cldb::Primitive* const utilityHeaderTargetType : UtilityHeaderTargetTypeList)
 		{
+			bool isSuccess = true;
 			switch (utilityHeaderTargetType->kind)
 			{
 			case cldb::Primitive::Kind::KIND_CLASS:
@@ -420,15 +442,19 @@ void UtilityHeaderGen::GenUtilityHeader
 				break;
 
 			default:
+				isSuccess = false;
 				break;
 			}
 			
-
-			cg.Line();
-			cg.Line();
-			cg.Line("-------------------------------------------");
-			cg.Line();
-			cg.Line();
+			if (isSuccess == true)
+			{
+				cg.Line();
+				cg.Line();
+				cg.Line("//-------------------------------------------");
+				cg.Line();
+				cg.Line();
+			}
+			
 		}
 
 		cg.WriteToFile(outputPath.c_str());

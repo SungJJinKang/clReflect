@@ -41,7 +41,8 @@ private:
 	static std::vector<cldb::Name> GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db);
 
 	// "::" can't be contained in macros, so we use "__"
-	static std::string ConvertTypeNameToMacrobableTypeName(const std::string& fullTypeName);
+	// '\' or '/' can't be contained in macros, so we use "_"
+	static std::string ConvertNameToMacrobableName(const std::string& fullTypeName);
 
 	// return Type Short Name. 
 	// Remove all namespace

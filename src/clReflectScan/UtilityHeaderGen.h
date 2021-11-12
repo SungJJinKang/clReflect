@@ -70,7 +70,7 @@ private:
 	//return macros name
 	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName);
 
-	std::vector<cldb::Name> FindTargetTypesName(const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
+	std::vector<cldb::Name> FindTargetTypesName(const std::string& sourceFilePath, const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
 	
 public:
 

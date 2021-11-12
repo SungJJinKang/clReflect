@@ -55,7 +55,7 @@ public:
     {
         return m_ReflectionSpecs;
     }
-	const std::map<std::string, DeclInformation>& GetSourceFilePathOfDeclMap()
+	const std::map<std::string, std::vector<DeclInformation>>& GetSourceFilePathOfDeclMap()
 	{
 		return m_SourceFilePathOfDeclMap;
 	}
@@ -88,7 +88,8 @@ private:
     const ReflectionSpecs& m_ReflectionSpecs;
 
 	// key : SourceFilePath of Decl 
-	std::map <std::string , DeclInformation> m_SourceFilePathOfDeclMap;
+	// implemented 100%
+	std::map <std::string , std::vector<DeclInformation>> m_SourceFilePathOfDeclMap;
 
     bool m_AllowReflect;
 };

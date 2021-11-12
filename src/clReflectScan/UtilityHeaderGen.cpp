@@ -278,19 +278,17 @@ std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cl
 
 std::vector<cldb::Name> UtilityHeaderGen::FindTargetTypesName
 (
-	const std::string & headerFilePath, 
-	ASTConsumer & astConsumer, 
-	cldb::Database & db
+	const std::string& sourceFilePath,
+	const std::string& headerFilePath, 
+	ASTConsumer& astConsumer, 
+	cldb::Database& db
 )
 {
 	std::vector<cldb::Name> targetTypesNameList;
 
-	const clang::SourceManager& srcmgr = astConsumer.GetASTContext().getSourceManager();
-	std::map<cldb::u32, clang::SourceLocation> sourceLocations = astConsumer.GetSourceLocationsOfDefinitions();
+	const std::map<std::string, std::vector<DeclInformation>>& declLocationMap = astConsumer.GetSourceFilePathOfDeclMap();
 
 
-
-	srcmgr.getFilename(sourceLocations[0]);
 
 	return std::vector<cldb::Name>();
 }
@@ -359,7 +357,7 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), targetHeaderFilePath.c_str());
 		cg.Line("#endif");
 
-		std::vector<cldb::Name> TargetTypesName = FindTargetTypesName(targetHeaderFilePath, astConsumer, db);
+		std::vector<cldb::Name> TargetTypesName = FindTargetTypesName(sourceFilePath, targetHeaderFilePath, astConsumer, db);
 
 		for (cldb::Name& targetTypeName : TargetTypesName)
 		{

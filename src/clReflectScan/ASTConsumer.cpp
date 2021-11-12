@@ -1147,7 +1147,7 @@ void ASTConsumer::AddSourceLocation(const std::string sourceFilePath, const Decl
 	assert(sourceFilePath.empty() == false);
 	if (sourceFilePath.empty() == false)
 	{
-		m_SourceFilePathOfDeclMap[sourceFilePath] = declInfo;
+		m_SourceFilePathOfDeclMap[sourceFilePath].push_back(declInfo);
 	}
 }
 

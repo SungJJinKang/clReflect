@@ -8,6 +8,15 @@ Customized Feature by SungJJinKang
 -------------------------
 
 Generate CompileTime Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)
+- HardCoded BaseChain Data ( https://github.com/SungJJinKang/Fast_Runtime_Type_Casting_cpp )
+
+Loadmap
+-------------------------
+
+Optimization ( Compile get slower )           
+
+
+--------------------------------------------------
 
 
 Installation Instructions

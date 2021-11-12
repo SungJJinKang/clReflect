@@ -24,6 +24,18 @@ namespace clang
     struct PrintingPolicy;
 }
 
+struct DeclInformation
+{
+	std::string QualifiedName; // decl full name ex) dooms::graphics::Graphics_Sever
+	cldb::Primitive::Kind Kind;
+
+	DeclInformation(const std::string& qualifiedName, cldb::Primitive::Kind kind)
+		: QualifiedName(qualifiedName), Kind(kind)
+	{
+
+	}
+};
+
 class ASTConsumer
 {
 public:
@@ -43,10 +55,14 @@ public:
     {
         return m_ReflectionSpecs;
     }
-	const std::map<cldb::u32, clang::SourceLocation>& GetSourceLocationsOfDefinitions()
+	const std::map<std::string, DeclInformation>& GetSourceFilePathOfDeclMap()
 	{
-		return m_SourceLocationsOfDefinitions;
+		return m_SourceFilePathOfDeclMap;
 	}
+
+	void AddSourceLocation(const std::string sourceFilePath, const DeclInformation& declInfo);
+	void AddSourceLocation(const clang::SourceLocation& sourceLocation, const DeclInformation& declInfo);
+	void AddSourceLocation(const clang::SourceLocation& sourceLocation, const cldb::Primitive* primitive);
 
 private:
     void AddDecl(clang::NamedDecl* decl, const std::string& parent_name, const clang::ASTRecordLayout* layout);
@@ -63,7 +79,7 @@ private:
     void MakeFunction(clang::NamedDecl* decl, const std::string& function_name, const std::string& parent_name,
                       std::vector<cldb::Field>& parameters);
 
-	void AddSourceLocation(const cldb::Name& definitionName, const clang::SourceLocation& sourceLocation);
+	
 
     cldb::Database& m_DB;
 
@@ -71,7 +87,8 @@ private:
 
     const ReflectionSpecs& m_ReflectionSpecs;
 
-	std::map<cldb::u32, clang::SourceLocation> m_SourceLocationsOfDefinitions;
+	// key : SourceFilePath of Decl 
+	std::map <std::string , DeclInformation> m_SourceFilePathOfDeclMap;
 
     bool m_AllowReflect;
 };

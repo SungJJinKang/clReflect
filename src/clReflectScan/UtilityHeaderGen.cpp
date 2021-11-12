@@ -292,7 +292,7 @@ std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen
 	const std::string CurrentTypeStaticHashValueAndFullName = "TYPE_FULLNAME_HASH_VALUE_NAME_STRING_" + macrobableClassFullTypeName;
 	cg.Line("#undef %s", CurrentTypeStaticHashValueAndFullName.c_str());
 	cg.Line("#define %s \\", CurrentTypeStaticHashValueAndFullName.c_str());
-	cg.Line("inline static const unsigned long int TYPE_FULL_NAME_HASH_VALUE = %d; \\", targetClassFullName.hash);
+	cg.Line("inline static const unsigned long int TYPE_FULL_NAME_HASH_VALUE = %u; \\", targetClassFullName.hash);
 	cg.Line("inline static const char* const TYPE_FULL_NAME = %s; \\", targetClassFullName.text.c_str());
 	cg.Line("inline static const char* const TYPE_SHORT_NAME = %s; ", targetClassShortName.c_str());
 

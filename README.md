@@ -4,11 +4,15 @@ Customized clReflect for DoomsEngine : C++ Reflection using clang
 
 - - -
 
-Customized Feature by SungJJinKang
+Customized Feature by SungJJinKang!!
 -------------------------
 
-Generate CompileTime Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)
+Generate Compile-Time Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)
 - HardCoded BaseChain Data ( https://github.com/SungJJinKang/Fast_Runtime_Type_Casting_cpp )
+- Current Type Alias, Base Type Alias Macros ( Current:: , Base:: )
+- Type Reflection Datas 
+
+[Look example ~.generated.h file](https://github.com/SungJJinKang/clReflect/tree/doom_engine_version/src/clReflectScan/example)
 
 Loadmap
 -------------------------

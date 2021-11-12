@@ -108,21 +108,21 @@ namespace cldb
 	{
 		enum Kind
 		{
-			KIND_ATTRIBUTE,
-			KIND_FLAG_ATTRIBUTE,
-			KIND_INT_ATTRIBUTE,
-			KIND_FLOAT_ATTRIBUTE,
-			KIND_PRIMITIVE_ATTRIBUTE,
-			KIND_TEXT_ATTRIBUTE,
-			KIND_TYPE,
-			KIND_ENUM_CONSTANT,
-			KIND_ENUM,
-			KIND_FIELD,
-			KIND_FUNCTION,
-			KIND_TEMPLATE_TYPE,
-			KIND_TEMPLATE,
-			KIND_CLASS,
-			KIND_NAMESPACE,
+			KIND_ATTRIBUTE = 1,
+			KIND_FLAG_ATTRIBUTE = 1 << 1,
+			KIND_INT_ATTRIBUTE = 1 << 2,
+			KIND_FLOAT_ATTRIBUTE = 1 << 3,
+			KIND_PRIMITIVE_ATTRIBUTE = 1 << 4,
+			KIND_TEXT_ATTRIBUTE = 1 << 5,
+			KIND_TYPE = 1 << 6,
+			KIND_ENUM_CONSTANT = 1 << 7,
+			KIND_ENUM = 1 << 8,
+			KIND_FIELD = 1 << 9,
+			KIND_FUNCTION = 1 << 10,
+			KIND_TEMPLATE_TYPE = 1 << 11,
+			KIND_TEMPLATE = 1 << 12,
+			KIND_CLASS = 1 << 13,
+			KIND_NAMESPACE = 1 << 14,
 		};
 
                 Primitive() {}
@@ -630,15 +630,15 @@ namespace cldb
 		const Name& GetName(const char* text);
 		const Name& GetName(u32 hash) const;
 
-		template <typename TYPE> void Add(const Name& name, const TYPE& object)
+		template <typename TYPE> auto Add(const Name& name, const TYPE& object)
 		{
 			assert(name != Name() && "Unnamed objects not supported");
 			DBMap<TYPE>& store = GetDBMap<TYPE>();
-			store.insert(typename DBMap<TYPE>::value_type(name.hash, object));
+			return store.insert(typename DBMap<TYPE>::value_type(name.hash, object));
 		}
-		template <typename TYPE> void AddPrimitive(const TYPE& prim)
+		template <typename TYPE> auto AddPrimitive(const TYPE& prim)
 		{
-			Add(prim.name, prim);
+			return Add(prim.name, prim);
 		}
 
 		template <typename TYPE> TYPE* GetFirstPrimitive(const char* name_string)

@@ -51,6 +51,9 @@
     <ClInclude Include="..\..\..\src\clReflectCore\CodeGen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\clReflectCore\pathUtility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\clReflect\src\clReflectCore\CMakeLists.txt" />

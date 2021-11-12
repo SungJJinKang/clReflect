@@ -159,7 +159,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\clReflect\src;C:\clReflect\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\clReflect\src;C:\clReflect\inc;%(AdditionalIncludeDirectories);C:\clReflect\extern\llvm\llvm\include;C:\clReflect\src;C:\clReflect\inc;C:\clReflect\extern\llvm\clang\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm\tools\clang\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm-build\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm-build\tools\clang\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <DisableSpecificWarnings>4146;4624;4800;4355;4291;4244</DisableSpecificWarnings>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -192,7 +192,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugCustom|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\clReflect\src;C:\clReflect\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\clReflect\src;C:\clReflect\inc;%(AdditionalIncludeDirectories);C:\clReflect\extern\llvm\llvm\include;C:\clReflect\src;C:\clReflect\inc;C:\clReflect\extern\llvm\clang\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm\tools\clang\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm-build\include;C:\clReflect\src\clReflectScan\..\..\extern\llvm-build\tools\clang\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <DisableSpecificWarnings>4146;4624;4800;4355;4291;4244</DisableSpecificWarnings>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -335,6 +335,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\clReflect\src\clReflectCore\FileUtils.cpp" />
     <ClCompile Include="C:\clReflect\src\clReflectCore\Logging.cpp" />
     <ClInclude Include="..\..\..\src\clReflectCore\CodeGen.h" />
+    <ClInclude Include="..\..\..\src\clReflectCore\pathUtility.h" />
     <ClInclude Include="C:\clReflect\src\clReflectCore\Arguments.h" />
     <ClInclude Include="C:\clReflect\src\clReflectCore\Array.h" />
     <ClInclude Include="C:\clReflect\src\clReflectCore\Database.h" />

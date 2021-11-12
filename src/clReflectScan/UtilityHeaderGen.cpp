@@ -79,7 +79,7 @@ std::string UtilityHeaderGen::ConvertFullTypeNameToShortTypeName(const std::stri
 	const size_t lastNamespaceSpecialCharacter = fullTypeName.find_last_of("::");
 	if (lastNamespaceSpecialCharacter != std::string::npos)
 	{
-		shorTypeName = fullTypeName.substr(lastNamespaceSpecialCharacter + 2);
+		shorTypeName = fullTypeName.substr(lastNamespaceSpecialCharacter + 1);
 	}
 
 	return shorTypeName;
@@ -110,7 +110,7 @@ bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 				if (result == true)
 				{
 					// Root class is found while travel recursive function!!
-					baseChainTypeNameList.push_back(baseClassName);
+					baseChainTypeNameList.push_back(targetClassName);
 					return true;
 				}
 			}
@@ -167,12 +167,12 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 
 		std::string baseChainText;
 		//baseChainText+=
-		for (int index = 0; index < baseChainList.size() - 1; index++) // don't use size_t, it can make underflow
+		for (int index = baseChainList.size() - 1 ; index > 0 ; index--) // don't use size_t, it can make underflow
 		{
 			baseChainText += std::to_string(baseChainList[index].hash);
 			baseChainText += ", ";
 		}
-		baseChainText += std::to_string(baseChainList[baseChainList.size() - 1].hash);
+		baseChainText += std::to_string(baseChainList[0].hash);
 
 		baseChainMacros = "INHERITANCE_INFORMATION_" + macrobableClassFullTypeName;
 		cg.Line("#undef %s", baseChainMacros.c_str());
@@ -293,8 +293,8 @@ std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen
 	cg.Line("#undef %s", CurrentTypeStaticHashValueAndFullName.c_str());
 	cg.Line("#define %s \\", CurrentTypeStaticHashValueAndFullName.c_str());
 	cg.Line("inline static const unsigned long int TYPE_FULL_NAME_HASH_VALUE = %d; \\", targetClassFullName.hash);
-	cg.Line("inline static const char* const TYPE_FULL_NAME = %d; \\", targetClassFullName.text.c_str());
-	cg.Line("inline static const char* const TYPE_SHORT_NAME = %d; ", targetClassShortName.c_str());
+	cg.Line("inline static const char* const TYPE_FULL_NAME = %s; \\", targetClassFullName.text.c_str());
+	cg.Line("inline static const char* const TYPE_SHORT_NAME = %s; ", targetClassShortName.c_str());
 
 	return CurrentTypeStaticHashValueAndFullName;
 }

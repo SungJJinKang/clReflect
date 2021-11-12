@@ -66,11 +66,16 @@ namespace
 
 ReflectionSpecs::ReflectionSpecs(const std::string& spec_log)
 {
-    LOG_TO_STDOUT(spec, WARNING);
-    LOG_TO_STDOUT(spec, ERROR);
+	thread_local static bool isLogInitialized = false;
+	if (isLogInitialized == false)
+	{
+		isLogInitialized = true;
+		LOG_TO_STDOUT(spec, WARNING);
+		LOG_TO_STDOUT(spec, ERROR);
 
-    if (spec_log != "")
-        LOG_TO_FILE(spec, ALL, spec_log.c_str());
+		if (spec_log != "")
+			LOG_TO_FILE(spec, ALL, spec_log.c_str());
+	}
 }
 
 void ReflectionSpecs::Gather(clang::TranslationUnitDecl* tu_decl)

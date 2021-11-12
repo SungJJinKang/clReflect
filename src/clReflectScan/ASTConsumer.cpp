@@ -636,10 +636,15 @@ ASTConsumer::ASTConsumer(cldb::Database& db, const ReflectionSpecs& rspecs, cons
     , m_ReflectionSpecs(rspecs)
     , m_AllowReflect(false)
 {
-    LOG_TO_STDOUT(warnings, INFO);
+	thread_local static bool isLogInitialized = false;
+	if (isLogInitialized == false)
+	{
+		isLogInitialized = true;
+		LOG_TO_STDOUT(warnings, INFO);
 
-    if (ast_log != "")
-        LOG_TO_FILE(ast, ALL, ast_log.c_str());
+		if (ast_log != "")
+			LOG_TO_FILE(ast, ALL, ast_log.c_str());
+	}
 }
 
 void ASTConsumer::WalkTranlationUnit(clang::ASTContext* ast_context, clang::TranslationUnitDecl* tu_decl)

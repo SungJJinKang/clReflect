@@ -24,10 +24,12 @@ thread_local std::map<cldb::u32, ksj::BaseTypeList> UtilityHeaderGen::BaseTypeLi
 
 UtilityHeaderGen::UtilityHeaderGen()
 {
-	LOG_TO_STDOUT(utilityHeaderGen, ALL);
-	LOG_TO_STDOUT(warnings, INFO);
-
-	
+	thread_local static bool isLogInitialized = false;
+	if (isLogInitialized == false)
+	{
+		isLogInitialized = true;
+		LOG_TO_STDOUT(UtilityHeaderGen, WARNING);
+	}
 }
 
 std::vector<cldb::Name> UtilityHeaderGen::GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db)
@@ -187,9 +189,16 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 		cg.Line("#define %s \\", baseChainMacros.c_str());
 		cg.Line
 		(
-			"private: inline static const unsigned long int BASE_CHAIN_LIST[] { %s }; \\", 
+			"public: inline static const unsigned long int BASE_CHAIN_LIST[] { %s }; \\", 
 			baseChainText.c_str()
 		); // unsigned long guarantee 32bit
+		cg.Line
+		(
+			"inline static const unsigned long int BASE_CHAIN_LIST_LENGTH { %u }; \\",
+			baseChainList.size()
+		); 
+		cg.Line("virtual const unsigned long int* GetBastChainList() { return BASE_CHAIN_LIST; } \\"); 
+		cg.Line("virtual unsigned long int GetBastChainListLength() { return BASE_CHAIN_LIST_LENGTH; } \\");
 
 		if (baseChainList.size() >= 2)
 		{
@@ -353,7 +362,7 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 		for (cldb::Primitive* const primitive : iter->second)
 		{
 			assert(primitive != nullptr);
-			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE && primitive->kind != 0)
+			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind != 0)
 			{
 				// find UtilityHeader's target type!
 				targetTypesNameList.emplace_back(primitive);
@@ -368,7 +377,7 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 		for (cldb::Primitive* const primitive : iter->second)
 		{
 			assert(primitive != nullptr);
-			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE && primitive->kind != 0)
+			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind != 0)
 			{
 				// find UtilityHeader's target type!
 				targetTypesNameList.emplace_back(primitive);
@@ -390,7 +399,7 @@ void UtilityHeaderGen::GenUtilityHeader
 	ASTConsumer& astConsumer
 )
 {
-	if (sourceFilePath.empty() == true || sourceFilePath[0] == ' ')
+	if (sourceFilePath.empty() == true)
 	{
 		return;
 	}
@@ -481,64 +490,14 @@ void UtilityHeaderGen::GenUtilityHeader
 		}
 
 		cg.WriteToFile(outputPath.c_str());
-		LOG(utilityHeaderGen, ALL, "Success to Write ~.reflectionh file ( %s )", outputPath.c_str());
 	}
 	else
 	{
-		LOG(warnings, INFO, "fail to generate UtilityHeader output path");
+		LOG(UtilityHeaderGen, WARNING, "fail to generate UtilityHeader output path");
 	}
 
 
 	
-	/*
-	const cldb::Name targetClassName = 
-
-	
-	CodeGen cg;
-
-	// Generate arrays
-	cg.Line("// Utility Header File ( Don't Edit this )");
-	cg.Line("static const int clcppNbTypes = %d;", primitives.size());
-	cg.Line("static const clcpp::Type* clcppTypePtrs[clcppNbTypes] = { 0 };");
-	cg.Line();
-
-	// Generate initialisation function
-	cg.Line("#ifndef GENERATE_BODY"); // If this macros is written in first line of header file, following macros will be ingnored
-	cg.Line("#define GENERATE_BODY \\");
-
-	cg.Line("void clcppInitGetType(const clcpp::Database* db)");
-	cg.EnterScope();
-	cg.Line("// Populate the type pointer array if a database is specified");
-	cg.Line("if (db != 0)");
-	cg.EnterScope();
-	for (size_t i = 0; i < primitives.size(); i++)
-		cg.Line("clcppTypePtrs[%d] = db->GetType(0x%x);", i, primitives[i].hash);
-	cg.ExitScope();
-	cg.ExitScope();
-	cg.Line();
-
-	ForwardDeclareTypes(cg, namespaces);
-
-	// Generate the implementations
-	cg.Line("// Specialisations for GetType and GetTypeNameHash");
-	cg.Line("namespace clcpp");
-	cg.EnterScope();
-	//GenGetTypes(cg, primitives, PT_Type | PT_Class | PT_Struct | PT_EnumClass | PT_EnumStruct);
-	cg.Line("#if defined(CLCPP_USING_MSVC)");
-	GenGetTypes(cg, primitives, PT_Enum);
-	cg.Line("#endif");
-	cg.ExitScope();
-
-
-	const std::string fileID = "FILE_ID_" + SourceFileNameWithoutExtension;
-	cg.Line("#undef D_FILE_ID");
-	cg.Line("#define D_FILE_ID %s", fileID.c_str());
-
-	cg.Line("#undef GENERATE_BODY ");
-	cg.Line("#define GENERATE_BODY \\");
-	cg.Line("BASE_CHAIN_DATA \\");
-
-	*/
 
 	
 }

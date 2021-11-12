@@ -362,7 +362,7 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 		for (cldb::Primitive* const primitive : iter->second)
 		{
 			assert(primitive != nullptr);
-			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind != 0)
+			if ((UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind) != 0)
 			{
 				// find UtilityHeader's target type!
 				targetTypesNameList.emplace_back(primitive);
@@ -377,7 +377,7 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 		for (cldb::Primitive* const primitive : iter->second)
 		{
 			assert(primitive != nullptr);
-			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind != 0)
+			if ((UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind) != 0)
 			{
 				// find UtilityHeader's target type!
 				targetTypesNameList.emplace_back(primitive);
@@ -455,6 +455,8 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPathMacros.c_str(), ConvertNameToMacrobableName(targetHeaderFilePath).c_str());
 		cg.Line("#endif");
 
+		cg.Line();
+		cg.Line();
 		cg.Line("#include <type_traits>");
 		cg.Line();
 		cg.Line();

@@ -28,13 +28,12 @@ class UtilityHeaderGen
 {
 private:
 
-	static const cldb::Primitive::Kind PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE =
-		cldb::Primitive::Kind(
+	static const int PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE =
 		cldb::Primitive::Kind::KIND_CLASS | // struct or class
 		cldb::Primitive::Kind::KIND_ENUM |
 		cldb::Primitive::Kind::KIND_TEMPLATE // template type
 		//cldb::Primitive::Kind::KIND_TEMPLATE_TYPE // this is template instantiation
-		);
+		;
 
 	thread_local static std::map<cldb::u32, ksj::BaseTypeList> BaseTypeList; // key : Derived Class's Name Hash, Value : Base Classes of Derived Class's Name Hash
 

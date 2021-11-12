@@ -157,8 +157,8 @@ int main(int argc, const char* argv[])
 	// this looks hacky.
 	// but clang compiler doesn't support multithread ( it use static variable at many codes ). 
 	// so this is to do that
-	std::vector<std::string> sourcePaths = options_parser->getSourcePathList();
-    clang::tooling::ClangTool tool(options_parser->getCompilations(), sourcePaths);
+	const std::vector<std::string> sourcePathList = options_parser->getSourcePathList();
+    clang::tooling::ClangTool tool(options_parser->getCompilations(), sourcePathList);
 	
 	const std::string outputFilePath = Output;
 	const std::string ast_logFilePath = ASTLog;
@@ -236,15 +236,12 @@ int main(int argc, const char* argv[])
 	}
 	
 	
-	UtilityHeaderGen utilityHeadergen{};
-	LOG(main, ALL, "__sourceFilePathList count : %u\n", sourcePaths.size());
-	for (const std::string& sourceFilePath : sourcePaths)
+	assert(sourcePathList.size() == 1);
+	if (sourcePathList.empty() == false)
 	{
-		if (sourceFilePath.empty() == false)
-		{
-			LOG(main, ALL, "creating reflectionh file (%s)\n", sourceFilePath.c_str());
-			utilityHeadergen.GenUtilityHeader(sourceFilePath, rootclass_typename, db, ast_consumer);
-		}
+		UtilityHeaderGen utilityHeadergen{};
+		LOG(main, ALL, "creating reflectionh file (%s)\n", sourcePathList[0].c_str());
+		utilityHeadergen.GenUtilityHeader(sourcePathList[0], rootclass_typename, db, ast_consumer);
 	}
 	
 

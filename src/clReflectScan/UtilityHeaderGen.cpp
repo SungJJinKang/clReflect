@@ -215,7 +215,7 @@ void UtilityHeaderGen::WriteClassMacros
 	const std::string macrobableClassShortTypeName = ConvertNameToMacrobableName(targetClassShortTypeName); //test
 
 	// define full name macros. you should wrtie namespace with this. ex) GENERATE_BODY_test_base_chain__G
-	const std::string fullNamebodyMacros = "GENERATE_BODY_" + macrobableClassFullTypeName;
+	const std::string fullNamebodyMacros = "GENERATE_BODY_FULLNAME_" + macrobableClassFullTypeName;
 	
 
 	cg.Line("#ifdef %s", fullNamebodyMacros.c_str());
@@ -276,6 +276,7 @@ void UtilityHeaderGen::WriteClassMacros
 	const std::string shortNamebodyMacros = "GENERATE_BODY_" + macrobableClassShortTypeName;
 	if (shortNamebodyMacros != fullNamebodyMacros)
 	{
+		cg.Line("//Type Short Name ( without namespace, only type name ) Version Macros.");
 		cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
 	}
 }
@@ -415,7 +416,7 @@ void UtilityHeaderGen::GenUtilityHeader
 	if (extensionDotPos != std::string::npos)
 	{
 		const std::string targetHeaderFilePath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".h";
-		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +"_generated.h";
+		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".reflectionh";
 
 		// Check types declared in outputPath
 		// Check record_decl->getLocation()
@@ -480,6 +481,7 @@ void UtilityHeaderGen::GenUtilityHeader
 		}
 
 		cg.WriteToFile(outputPath.c_str());
+		LOG(utilityHeaderGen, ALL, "Success to Write ~.reflectionh file ( %s )", outputPath.c_str());
 	}
 	else
 	{

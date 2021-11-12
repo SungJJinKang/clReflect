@@ -474,6 +474,22 @@ void UtilityHeaderGen::GenUtilityHeader
 
 		std::vector<cldb::Primitive*> UtilityHeaderTargetTypeList = FindTargetTypesName(sourceFilePath, targetHeaderFilePath, astConsumer, db);
 
+		// swap element location for type having name equal sourcefile name to be located at last pos
+		if (UtilityHeaderTargetTypeList.size() >= 2)
+		{
+			for (auto iter = UtilityHeaderTargetTypeList.begin(); iter != UtilityHeaderTargetTypeList.end(); iter++)
+			{
+				if (ConvertFullTypeNameToShortTypeName((*iter)->name.text) == SourceFileNameWithoutExtension)
+				{
+					// find type having name equal sourcefile name!!
+					std::swap(iter, UtilityHeaderTargetTypeList.end() - 1);
+					break;
+				}
+			}
+		}
+		
+		
+
 		for (cldb::Primitive* const utilityHeaderTargetType : UtilityHeaderTargetTypeList)
 		{
 			bool isSuccess = true;

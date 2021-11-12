@@ -205,6 +205,28 @@ namespace
         return Status();
     }
 
+	bool IsForwardDeclaration(const clang::NamedDecl* const decl)
+	{
+		// Must be a struct/union/class
+		const clang::CXXRecordDecl* record_decl = llvm::dyn_cast<const clang::CXXRecordDecl>(decl);
+		if (record_decl == nullptr)
+		{
+			return false;
+		}
+
+		// See AddClassDecl comments for this behaviour
+		if (record_decl->isThisDeclarationADefinition() != clang::VarDecl::DeclarationOnly)
+		{
+			return false;
+		}
+		if (!record_decl->isFreeStanding())
+		{
+			return false;
+		}
+
+		return true;
+	}
+
     Status ParseTemplateSpecialisation(ASTConsumer& consumer, const clang::ClassTemplateSpecializationDecl* cts_decl,
                                        std::string& type_name_str)
     {
@@ -294,7 +316,12 @@ namespace
             LOG_NEWLINE(ast);
 
             auto iter = db.AddPrimitive(type);
-			consumer.AddSourceLocation(cts_decl->getLocation(), &(iter->second));
+
+			if (IsForwardDeclaration(template_decl) == false)
+			{
+				consumer.AddSourceLocation(cts_decl->getLocation(), &(iter->second));
+			}
+			
         }
 
         return Status();
@@ -455,27 +482,7 @@ namespace
         }
     }
 
-    bool IsForwardDeclaration(clang::NamedDecl* decl)
-    {
-        // Must be a struct/union/class
-        clang::CXXRecordDecl* record_decl = llvm::dyn_cast<clang::CXXRecordDecl>(decl);
-        if (record_decl == nullptr)
-        {
-            return false;
-        }
-
-        // See AddClassDecl comments for this behaviour
-        if (record_decl->isThisDeclarationADefinition() != clang::VarDecl::DeclarationOnly)
-        {
-            return false;
-        }
-        if (!record_decl->isFreeStanding())
-        {
-            return false;
-        }
-
-        return true;
-    }
+   
 
     enum ParseAttributesResult
     {
@@ -851,13 +858,13 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
 			cldb::Class classPrimitive = cldb::Class(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()), is_class);
 
 			auto iter = m_DB.AddPrimitive(classPrimitive);
-			AddSourceLocation(record_decl->getLocation(), &(iter->second));
-
             class_ptr = m_DB.GetFirstPrimitive<cldb::Class>(name.c_str());
         }
 
         if (!forward_decl)
         {
+			assert(class_ptr != nullptr);
+
             // Fill in the missing class size
             const clang::ASTRecordLayout& layout = m_ASTContext->getASTRecordLayout(record_decl);
             class_ptr->size = layout.getSize().getQuantity();
@@ -869,6 +876,9 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
 
             // Populate class contents
             AddContainedDecls(decl, name, &layout);
+
+			//call AddSourceLocation function only when it's not forward declaration
+			AddSourceLocation(record_decl->getLocation(), class_ptr);
         }
 
         else
@@ -911,7 +921,10 @@ void ASTConsumer::AddEnumDecl(clang::NamedDecl* decl, const std::string& name, c
 	cldb::Enum enumPrimitive = cldb::Enum(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()), scoped);
 
 	auto iter = m_DB.AddPrimitive(enumPrimitive);
-	AddSourceLocation(enum_decl->getLocation(), &(iter->second));
+	if (IsForwardDeclaration(decl) == false)
+	{
+		AddSourceLocation(enum_decl->getLocation(), &(iter->second));
+	}
 
     LOG_PUSH_INDENT(ast);
 
@@ -1039,7 +1052,12 @@ void ASTConsumer::AddClassTemplateDecl(clang::NamedDecl* decl, const std::string
 		cldb::Template templatePrimitive = cldb::Template(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()));
  
 		auto iter = m_DB.AddPrimitive(templatePrimitive);
-		AddSourceLocation(template_decl->getLocation(), &(iter->second));
+
+		if (IsForwardDeclaration(decl) == false)
+		{
+			AddSourceLocation(template_decl->getLocation(), &(iter->second));
+		}
+		
 
         LOG(ast, INFO, "template %s\n", name.c_str());
     }
@@ -1122,7 +1140,10 @@ void ASTConsumer::MakeFunction(clang::NamedDecl* decl, const std::string& functi
 	cldb::Function functionPrimitive = cldb::Function(m_DB.GetName(function_name.c_str()), m_DB.GetName(parent_name.c_str()), unique_id);
 
 	auto iter = m_DB.AddPrimitive(functionPrimitive);
-	AddSourceLocation(function_decl->getLocation(), &(iter->second));
+	if (IsForwardDeclaration(function_decl) == false)
+	{
+		AddSourceLocation(function_decl->getLocation(), &(iter->second));
+	}
 
     LOG_PUSH_INDENT(ast);
 

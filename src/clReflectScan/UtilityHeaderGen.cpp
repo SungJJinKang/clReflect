@@ -17,6 +17,7 @@
 #include <clang/AST/ASTContext.h>
 
 #include <cassert>
+#include <algorithm>
 
 using namespace cldb;
 
@@ -365,7 +366,11 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 			if ((UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind) != 0)
 			{
 				// find UtilityHeader's target type!
-				targetTypesNameList.emplace_back(primitive);
+				if (std::find(targetTypesNameList.begin(), targetTypesNameList.end(), primitive) == targetTypesNameList.end())
+				{
+					// prevent duplicated primitive
+					targetTypesNameList.emplace_back(primitive);
+				}
 			}
 		}
 	}
@@ -380,7 +385,10 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 			if ((UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE & primitive->kind) != 0)
 			{
 				// find UtilityHeader's target type!
-				targetTypesNameList.emplace_back(primitive);
+				if (std::find(targetTypesNameList.begin(), targetTypesNameList.end(), primitive) == targetTypesNameList.end())
+				{
+					targetTypesNameList.emplace_back(primitive);
+				}
 			}
 		}
 

@@ -200,7 +200,7 @@ int main(int argc, const char* argv[])
 	UtilityHeaderGen utilityHeadergen{};
 	for (const std::string& sourceFilePath : sourceFilePathList)
 	{
-		utilityHeadergen.GenUtilityHeader(sourceFilePath, rootclass_typename, db);
+		utilityHeadergen.GenUtilityHeader(sourceFilePath, rootclass_typename, db, ast_consumer);
 	}
 	
 

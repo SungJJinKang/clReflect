@@ -10,6 +10,7 @@
 //
 
 #include "clReflectCore/Database.h"
+#include <clang/Basic/SourceManager.h>
 
 class ReflectionSpecs;
 
@@ -42,6 +43,10 @@ public:
     {
         return m_ReflectionSpecs;
     }
+	const std::map<cldb::u32, clang::SourceLocation>& GetSourceLocationsOfDefinitions()
+	{
+		return m_SourceLocationsOfDefinitions;
+	}
 
 private:
     void AddDecl(clang::NamedDecl* decl, const std::string& parent_name, const clang::ASTRecordLayout* layout);
@@ -58,11 +63,15 @@ private:
     void MakeFunction(clang::NamedDecl* decl, const std::string& function_name, const std::string& parent_name,
                       std::vector<cldb::Field>& parameters);
 
+	void AddSourceLocation(const cldb::Name& definitionName, const clang::SourceLocation& sourceLocation);
+
     cldb::Database& m_DB;
 
     clang::ASTContext* m_ASTContext;
 
     const ReflectionSpecs& m_ReflectionSpecs;
+
+	std::map<cldb::u32, clang::SourceLocation> m_SourceLocationsOfDefinitions;
 
     bool m_AllowReflect;
 };

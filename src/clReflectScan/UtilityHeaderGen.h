@@ -12,40 +12,65 @@
 #include "clReflectCore/Database.h"
 #include "clReflectCore/CodeGen.h"
 
+
 namespace ksj
 {
-	struct BaseClassList
+	struct BaseTypeList
 	{
-		std::vector<cldb::u32> NameHashList;
+		std::vector<cldb::Name> BaseTypeNameList;
 		bool isInitialized = false;
 	};
 }
+
+class ASTConsumer;
 
 class UtilityHeaderGen
 {
 private:
 
-	thread_local static std::map<cldb::u32, ksj::BaseClassList> BaseClassList; // key : Derived Class's Name Hash, Value : Base Classes of Derived Class's Name Hash
+	thread_local static std::map<cldb::u32, ksj::BaseTypeList> BaseTypeList; // key : Derived Class's Name Hash, Value : Base Classes of Derived Class's Name Hash
 
-	static std::vector<cldb::u32> GetBaseClassesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db);
+	static std::vector<cldb::Name> GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db);
 
 	// "::" can't be contained in macros, so we use "__"
-	static std::string ConvertNameToMacrobableName(const std::string& name);
+	static std::string ConvertTypeNameToMacrobableTypeName(const std::string& fullTypeName);
+
+	// return Type Short Name. 
+	// Remove all namespace
+	// ex) namespaceA::namespaceB::TestClass -> TestClass
+	static std::string ConvertFullTypeNameToShortTypeName(const std::string& fullTypeName);
 	
 	// return BaseChainList in baseChainList
 	// RootClass is stored at first pos of baseChainList
+	//
 	// return true if root class is found in class hierarchy, or return false
 	//
 	// this function doesn't support multiple inheritance
-	bool GenerateBaseChainList
+	bool GenerateBaseChainList_RecursiveFunction
 	(
-		const cldb::u32 targetClassNameHash,
-		const cldb::u32 targetRootClassNameHash,
+		const cldb::Name targetClassName,
+		const cldb::Name targetRootClassName,
 		cldb::Database& db,
-		std::vector<cldb::u32>& baseChainList
+		std::vector<cldb::Name>& baseChainTypeNameList
 	);
-	void WriteBaseChainList(CodeGen& cg, const std::vector<cldb::u32>& baseChainList);
-	cldb::Name FindTargetClass(const std::string& className, cldb::Database& db);
+	
+	//return macros name
+	std::string WriteInheritanceInformationMacros
+	(
+		CodeGen& cg,
+		const cldb::Name& targetClassFullName,
+		const cldb::Name& rootclass_typename,
+		const std::string& macrobableClassFullTypeName,
+		cldb::Database& db
+	);
+	
+	// Write Macros of Class Type to CodeGen
+	void WriteClassMacros(CodeGen& cg, const cldb::Name targetClassFullName, const std::string& rootclass_typename, cldb::Database& db);
+
+	//return macros name
+	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName);
+
+	std::vector<cldb::Name> FindTargetTypesName(const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
 	
 public:
 
@@ -58,7 +83,8 @@ public:
 	(
 		const std::string& sourceFilePath, 
 		const std::string& rootclass_typename,
-		cldb::Database& db
+		cldb::Database& db,
+		ASTConsumer& astConsumer
 	);
 
 };

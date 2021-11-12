@@ -29,7 +29,6 @@
 #include <clang/AST/DeclTemplate.h>
 #include <clang/AST/RecordLayout.h>
 #include <clang/AST/TemplateName.h>
-#include <clang/Basic/SourceManager.h>
 #include <llvm/IR/Attributes.h>
 
 #include <stdarg.h>
@@ -1117,4 +1116,13 @@ void ASTConsumer::MakeFunction(clang::NamedDecl* decl, const std::string& functi
     }
 
     LOG_POP_INDENT(ast);
+}
+
+void ASTConsumer::AddSourceLocation(const cldb::Name & definitionName, const clang::SourceLocation & sourceLocation)
+{
+	assert(definitionName.hash != 0);
+	if (definitionName.hash != 0)
+	{
+		m_SourceLocationsOfDefinitions[definitionName.hash] = sourceLocation;
+	}
 }

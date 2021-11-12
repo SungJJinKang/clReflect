@@ -13,12 +13,14 @@
 #include <clReflectCore/Logging.h>
 #include <clReflectCore/FileUtils.h>
 #include <clcpp/clcpp.h>
+#include "ASTConsumer.h"
+#include <clang/AST/ASTContext.h>
 
 #include <cassert>
 
 using namespace cldb;
 
-thread_local std::map<cldb::u32, ksj::BaseClassList> UtilityHeaderGen::BaseClassList{};
+thread_local std::map<cldb::u32, ksj::BaseTypeList> UtilityHeaderGen::BaseTypeList{};
 
 UtilityHeaderGen::UtilityHeaderGen()
 {
@@ -28,10 +30,10 @@ UtilityHeaderGen::UtilityHeaderGen()
 	
 }
 
-std::vector<cldb::u32> UtilityHeaderGen::GetBaseClassesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db)
+std::vector<cldb::Name> UtilityHeaderGen::GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db)
 {
-	ksj::BaseClassList& baseClassList = BaseClassList[searchDerivedClassNameHash];
-	if (baseClassList.isInitialized == false)
+	ksj::BaseTypeList& baseTypeList = BaseTypeList[searchDerivedClassNameHash];
+	if (baseTypeList.isInitialized == false)
 	{
 		//This can be optimized if add std::map<u32, std::vector<u32>> variable to cldb::Database
 		//It require some work in cldb::Database::AddTypeInheritance function
@@ -45,57 +47,70 @@ std::vector<cldb::u32> UtilityHeaderGen::GetBaseClassesName(const cldb::u32 sear
 
 			if (searchDerivedClassNameHash == inherit.derived_type.hash) // hash guarantee uniqueness
 			{
-				baseClassList.NameHashList.push_back(inherit.base_type.hash);
+				baseTypeList.BaseTypeNameList.push_back(inherit.base_type);
 			}
 		}
 
-		baseClassList.isInitialized = true;
+		baseTypeList.isInitialized = true;
 	}
 	
-	return baseClassList.NameHashList;
+	return baseTypeList.BaseTypeNameList;
 }
 
-std::string UtilityHeaderGen::ConvertNameToMacrobableName(const std::string & name)
+std::string UtilityHeaderGen::ConvertTypeNameToMacrobableTypeName(const std::string & fullTypeName)
 {
 	// "::" can't be contained in macros, so we use "__"
-	std::string result = name;
-	for (size_t i = 0; i < result.size(); i++)
+	std::string macrobableTypeName = fullTypeName;
+	for (size_t i = 0; i < macrobableTypeName.size(); i++)
 	{
-		if (result[i] == ':')
+		if (macrobableTypeName[i] == ':')
 		{
-			result[i] = '_';
+			macrobableTypeName[i] = '_';
 		}
 	}
 
-	return result;
+	return macrobableTypeName;
 }
 
-bool UtilityHeaderGen::GenerateBaseChainList
+std::string UtilityHeaderGen::ConvertFullTypeNameToShortTypeName(const std::string& fullTypeName)
+{
+	std::string shorTypeName = fullTypeName;
+
+	const size_t lastNamespaceSpecialCharacter = fullTypeName.find_last_of("::");
+	if (lastNamespaceSpecialCharacter != std::string::npos)
+	{
+		shorTypeName = fullTypeName.substr(lastNamespaceSpecialCharacter + 2);
+	}
+
+	return shorTypeName;
+}
+
+bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 (
-	const cldb::u32 targetClassNameHash,
-	const cldb::u32 targetRootClassNameHash,
+	const cldb::Name targetClassName,
+	const cldb::Name targetRootClassName,
 	cldb::Database& db,
-	std::vector<cldb::u32>& baseChainList
+	std::vector<cldb::Name>& baseChainTypeNameList
 )
 {
-	if (targetClassNameHash == targetRootClassNameHash)
+	if (targetClassName == targetRootClassName)
 	{
 		//If root class
-		baseChainList.push_back(targetRootClassNameHash);
+		baseChainTypeNameList.push_back(targetRootClassName);
 		return true;
 	}
 	else
 	{
-		std::vector<cldb::u32> baseClassList = GetBaseClassesName(targetClassNameHash, db);
+		std::vector<cldb::Name> baseClassList = GetBaseTypesName(targetClassName.hash, db);
 		if (baseClassList.empty() == false)
 		{
-			for (cldb::u32& baseClassName : baseClassList)
+			for (cldb::Name& baseClassName : baseClassList)
 			{
-				const bool result = GenerateBaseChainList(baseClassName, targetRootClassNameHash, db, baseChainList);
+				const bool result = GenerateBaseChainList_RecursiveFunction(baseClassName, targetRootClassName, db, baseChainTypeNameList);
 				if (result == true)
 				{
 					// Root class is found while travel recursive function!!
-					baseChainList.push_back(baseClassName);
+					baseChainTypeNameList.push_back(baseClassName);
 					return true;
 				}
 			}
@@ -106,6 +121,7 @@ bool UtilityHeaderGen::GenerateBaseChainList
 	}	
 }
 
+/*
 cldb::Name UtilityHeaderGen::FindTargetClass(const std::string & className, cldb::Database & db)
 {
 	std::vector<cldb::Name> targetClassCandidate;
@@ -119,32 +135,174 @@ cldb::Name UtilityHeaderGen::FindTargetClass(const std::string & className, cldb
 	}
 	return cldb::Name();
 }
+*/
 
-void UtilityHeaderGen::WriteBaseChainList(CodeGen& cg, const std::vector<cldb::u32>& baseChainList)
+std::string UtilityHeaderGen::WriteInheritanceInformationMacros
+(
+	CodeGen& cg,
+	const cldb::Name& targetClassFullName,
+	const cldb::Name& rootclass_typename,
+	const std::string& macrobableClassFullTypeName,
+	cldb::Database& db
+)
 {
-	assert(baseChainList.empty() == false);
-	if (baseChainList.empty() == false)
+
+	std::string baseChainMacros;
+
+
+	std::vector<cldb::Name> baseChainList;
+	// if root class, return false
+	const bool isSuccess = GenerateBaseChainList_RecursiveFunction
+	(
+		targetClassFullName,
+		rootclass_typename,
+		db,
+		baseChainList
+	);
+
+	//if class is rootclass or inherited from root class, it never return false and empty list.
+	if (isSuccess == true && baseChainList.empty() == false)
 	{
-		cg.Line("\\");
+		cg.Line();
 
 		std::string baseChainText;
 		//baseChainText+=
 		for (int index = 0; index < baseChainList.size() - 1; index++) // don't use size_t, it can make underflow
 		{
-			baseChainText += std::to_string(baseChainList[index]);
+			baseChainText += std::to_string(baseChainList[index].hash);
 			baseChainText += ", ";
 		}
-		baseChainText += std::to_string(baseChainList[baseChainList.size() - 1]);
+		baseChainText += std::to_string(baseChainList[baseChainList.size() - 1].hash);
 
-		cg.Line("private: inline static const unsigned long int BASE_CHAIN_LIST[] { %s }; \\", baseChainText.c_str()); // unsigned long guarantee 32bit
+		baseChainMacros = "INHERITANCE_INFORMATION_" + macrobableClassFullTypeName;
+		cg.Line("#undef %s", baseChainMacros.c_str());
+		cg.Line("#define %s \\", baseChainMacros.c_str());
+		cg.Line
+		(
+			"private: inline static const unsigned long int BASE_CHAIN_LIST[] { %s }; \\", 
+			baseChainText.c_str()
+		); // unsigned long guarantee 32bit
+
+		if (baseChainList.size() >= 2)
+		{
+			cg.Line("typedef %s Base", baseChainList[1].text.c_str());
+		}
 	}
+
+	return baseChainMacros;
 }
+
+
+void UtilityHeaderGen::WriteClassMacros
+(
+	CodeGen& cg, 
+	const cldb::Name targetClassFullName, 
+	const std::string& rootclass_typename, 
+	cldb::Database & db
+)
+{
+	const std::string macrobableClassFullTypeName = ConvertTypeNameToMacrobableTypeName(targetClassFullName.text); //test
+	const std::string macrobableClassShortTypeName = ConvertTypeNameToMacrobableTypeName(ConvertFullTypeNameToShortTypeName(targetClassFullName.text)); //test
+
+	// define full name macros. you should wrtie namespace with this. ex) GENERATE_BODY_test_base_chain__G
+	const std::string fullNamebodyMacros = "GENERATE_BODY_" + macrobableClassFullTypeName;
+	
+
+	cg.Line("#ifdef %s", fullNamebodyMacros.c_str());
+	cg.Line("#error \"%s already included....\"", fullNamebodyMacros.c_str());
+	cg.Line("#endif");
+
+	std::vector<std::string> macrosNameList;
+	
+	if (rootclass_typename.empty() == false)
+	{
+		// 3. generate base chain data ( implemented 100% )
+
+		cldb::Name rootclass_cldb_typename = db.GetName(rootclass_typename.c_str());
+
+		const std::string baseChainListMacros = WriteInheritanceInformationMacros
+		(
+			cg,
+			targetClassFullName,
+			rootclass_cldb_typename,
+			macrobableClassFullTypeName,
+			db
+		);
+
+		if (baseChainListMacros.empty() == false)
+		{
+			macrosNameList.push_back(baseChainListMacros);
+		}
+
+	}
+
+	// Define Current Type Alias
+	const std::string CurrentTypeAliasMacrosName = WriteCurrentTypeAliasMacros(cg, targetClassFullName, macrobableClassFullTypeName);
+	macrosNameList.push_back(CurrentTypeAliasMacrosName);
+	// 4. generate reflection variable, function, static functions, static variable
+
+	cg.Line();
+	cg.Line();
+	cg.Line("#undef %s", fullNamebodyMacros.c_str());
+	cg.Line("#define %s \\", fullNamebodyMacros.c_str());
+
+	for (const std::string& macro : macrosNameList)
+	{
+		cg.Line("%s \\", macro.c_str());
+	}
+
+	cg.Line();
+	cg.Line();
+
+	// define short name macros for programer. you can except namespace with this. ex) GENERATE_BODY_G
+	const std::string shortNamebodyMacros = "GENERATE_BODY_" + macrobableClassShortTypeName;
+	cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
+}
+
+
+std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cldb::Name& targetClassFullName, const std::string & macrobableClassFullTypeName)
+{
+	assert(targetClassFullName.text.empty() == false);
+	assert(targetClassFullName.hash != 0);
+	assert(macrobableClassFullTypeName.text.empty() == false);
+
+	const std::string CurrentTypeAliasMacrosName = "CURRENT_TYPE_ALIAS_" + macrobableClassFullTypeName;
+	cg.Line();
+	cg.Line();
+	cg.Line("#undef %s", CurrentTypeAliasMacrosName.c_str());
+	cg.Line("#define %s \\", CurrentTypeAliasMacrosName.c_str());
+	cg.Line("typedef %s Current", targetClassFullName.text.c_str());
+
+	return CurrentTypeAliasMacrosName;
+}
+
+std::vector<cldb::Name> UtilityHeaderGen::FindTargetTypesName
+(
+	const std::string & headerFilePath, 
+	ASTConsumer & astConsumer, 
+	cldb::Database & db
+)
+{
+	std::vector<cldb::Name> targetTypesNameList;
+
+	const clang::SourceManager& srcmgr = astConsumer.GetASTContext().getSourceManager();
+	std::map<cldb::u32, clang::SourceLocation> sourceLocations = astConsumer.GetSourceLocationsOfDefinitions();
+
+
+
+	srcmgr.getFilename(sourceLocations[0]);
+
+	return std::vector<cldb::Name>();
+}
+
+
 
 void UtilityHeaderGen::GenUtilityHeader
 (
 	const std::string& sourceFilePath, 
 	const std::string& rootclass_typename, 
-	cldb::Database & db
+	cldb::Database & db,
+	ASTConsumer& astConsumer
 )
 {
 	if (sourceFilePath.empty() == true || sourceFilePath[0] == ' ')
@@ -172,7 +330,7 @@ void UtilityHeaderGen::GenUtilityHeader
 	extensionDotPos = sourceFilePath.find_last_of('.');
 	if (extensionDotPos != std::string::npos)
 	{
-		const std::string headerPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".h";
+		const std::string targetHeaderFilePath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".h";
 		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +"_generated.h";
 
 		// Check types declared in outputPath
@@ -190,64 +348,27 @@ void UtilityHeaderGen::GenUtilityHeader
 		CodeGen cg;
 
 		// Generate arrays
+		cg.Line("#pragma once");
+		cg.Line();
 		cg.Line("// Utility Header File ( Don't Edit this )");
 		cg.Line("SourceFilePath : %s", sourceFilePath.c_str());
 		cg.Line();
 		cg.Line();
 
-		const std::string classFullNameMacros = ConvertNameToMacrobableName("test_base_chain::G"); //test
-		const std::string classShortNameMacros = ConvertNameToMacrobableName("G"); //test
-
-		// define full name macros. you should wrtie namespace with this. ex) GENERATE_BODY_test_base_chain__G
-		const std::string fullNamebodyMacros = "GENERATE_BODY_" + classFullNameMacros;
 		cg.Line("#ifdef %s", outputPath.c_str());
-		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), headerPath.c_str());
+		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), targetHeaderFilePath.c_str());
 		cg.Line("#endif");
 
-		cg.Line("#ifdef %s", fullNamebodyMacros.c_str());
-		cg.Line("#error \"%s already included....\"", fullNamebodyMacros.c_str());
-		cg.Line("#endif");
+		std::vector<cldb::Name> TargetTypesName = FindTargetTypesName(targetHeaderFilePath, astConsumer, db);
 
-
-		cg.Line("#undef %s", fullNamebodyMacros.c_str());
-		cg.Line("#define %s \\", fullNamebodyMacros.c_str());
-
-		if (rootclass_typename.empty() == false)
+		for (cldb::Name& targetTypeName : TargetTypesName)
 		{
-			// 3. generate base chain data ( implemented 100% )
-
-			
-
-			// test codes
-			std::vector<cldb::u32> baseChainList;
-			GenerateBaseChainList
-			(
-				clcpp::internal::HashNameString("test_base_chain::G"),
-				clcpp::internal::HashNameString(rootclass_typename.c_str()),
-				db,
-				baseChainList
-			);
-
-			WriteBaseChainList(cg, baseChainList);
-
-			assert(baseChainList[0] == clcpp::internal::HashNameString("test_base_chain::G"));
-			assert(baseChainList[0] != clcpp::internal::HashNameString("test_base_chain::TEST3"));
-			assert(baseChainList[1] == clcpp::internal::HashNameString("test_base_chain::F"));
-			assert(baseChainList[2] == clcpp::internal::HashNameString("test_base_chain::D"));
-			assert(baseChainList[3] == clcpp::internal::HashNameString("test_base_chain::C"));
-			assert(baseChainList[4] == clcpp::internal::HashNameString("test_base_chain::B"));
-			assert(baseChainList[4] != clcpp::internal::HashNameString("test_base_chain::TEST2"));
-			assert(baseChainList[4] != clcpp::internal::HashNameString("test_base_chain::TEST1"));
-			assert(baseChainList.size() == 5);
-			// create base chain data if rootclass_typename is not empty
-
+			WriteClassMacros(cg, targetTypeName, rootclass_typename, db);
 		}
 
-		// 4. generate reflection variable, function, static functions, static variable
+	
 
-		// define short name macros for programer. you can except namespace with this. ex) GENERATE_BODY_G
-		const std::string shortNamebodyMacros = "GENERATE_BODY_" + classShortNameMacros;
-		cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
+		
 
 		cg.WriteToFile(outputPath.c_str());
 	}

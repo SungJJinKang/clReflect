@@ -254,6 +254,10 @@ void UtilityHeaderGen::WriteClassMacros
 	macrosNameList.push_back(CurrentTypeStaticHashValueAndFullName);
 	// 4. generate reflection variable, function, static functions, static variable
 
+	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName);
+	macrosNameList.push_back(WriteTypeCheckFunctionMcros);
+
+
 	cg.Line();
 	cg.Line();
 	cg.Line("#undef %s", fullNamebodyMacros.c_str());
@@ -310,6 +314,23 @@ std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen
 	cg.Line("inline static const char* const TYPE_SHORT_NAME = \"%s\"; ", targetClassShortName.c_str());
 
 	return CurrentTypeStaticHashValueAndFullName;
+}
+
+std::string UtilityHeaderGen::WriteTypeCheckFunction(CodeGen & cg, const cldb::Name & targetClassFullName, const std::string & macrobableClassFullTypeName)
+{
+	assert(targetClassFullName.text.empty() == false);
+	assert(targetClassFullName.hash != 0);
+	assert(macrobableClassFullTypeName.empty() == false);
+
+	cg.Line();
+	cg.Line();
+	const std::string TypeCheckFunctionMacros = "TYPE_CHECK_FUNCTION_" + macrobableClassFullTypeName;
+	cg.Line("#undef %s", TypeCheckFunctionMacros.c_str());
+	cg.Line("#define %s \\", TypeCheckFunctionMacros.c_str());
+	cg.Line("private: \\");
+	cg.Line("attrNoReflect void __TYPE_CHECK() { static_assert(std::is_same_v<std::decay<decltype(*this)>::type, Current> == true, \"ERROR : WRONG TYPE. Please Check GENERATED_~ MACROS\");} \\");
+
+	return TypeCheckFunctionMacros;
 }
 
 std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
@@ -424,6 +445,7 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPathMacros.c_str(), ConvertNameToMacrobableName(targetHeaderFilePath).c_str());
 		cg.Line("#endif");
 
+		cg.Line("#include <type_traits>");
 		cg.Line();
 		cg.Line();
 		cg.Line("//-------------------------------------------");

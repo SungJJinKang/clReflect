@@ -30,8 +30,12 @@
 #include <clang/AST/RecordLayout.h>
 #include <clang/AST/TemplateName.h>
 #include <llvm/IR/Attributes.h>
+#include <llvm/Support/Path.h>
+#include <llvm/ADT/SmallVector.h>
 
 #include <stdarg.h>
+
+#include <clReflectCore/pathUtility.h>
 
 namespace
 {
@@ -289,8 +293,8 @@ namespace
                 LOG_APPEND(ast, INFO, (i == 0) ? " : %s" : ", %s", base_names[i].text.c_str());
             LOG_NEWLINE(ast);
 
-            db.AddPrimitive(type);
-			consumer.AddSourceLocation(cts_decl->getLocation(), &type);
+            auto iter = db.AddPrimitive(type);
+			consumer.AddSourceLocation(cts_decl->getLocation(), &(iter->second));
         }
 
         return Status();
@@ -738,8 +742,8 @@ void ASTConsumer::AddNamespaceDecl(clang::NamedDecl* decl, const std::string& na
     if (m_DB.GetFirstPrimitive<cldb::Namespace>(name.c_str()) == 0)
     {
 		cldb::Namespace namespacePrimitive = cldb::Namespace(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()));
-        m_DB.AddPrimitive(namespacePrimitive);
-		AddSourceLocation(decl->getLocation(), &namespacePrimitive);
+		auto iter = m_DB.AddPrimitive(namespacePrimitive);
+		AddSourceLocation(decl->getLocation(), &(iter->second));
         LOG(ast, INFO, "namespace %s\n", name.c_str());
     }
 
@@ -840,9 +844,9 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
             bool is_class = record_decl->getTagKind() == clang::TTK_Class;
 
 			cldb::Class classPrimitive = cldb::Class(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()), is_class);
-            m_DB.AddPrimitive(classPrimitive);
 
-			AddSourceLocation(record_decl->getLocation(), &classPrimitive);
+			auto iter = m_DB.AddPrimitive(classPrimitive);
+			AddSourceLocation(record_decl->getLocation(), &(iter->second));
 
             class_ptr = m_DB.GetFirstPrimitive<cldb::Class>(name.c_str());
         }
@@ -900,8 +904,9 @@ void ASTConsumer::AddEnumDecl(clang::NamedDecl* decl, const std::string& name, c
     // Add to the database
     LOG(ast, INFO, "enum %s%s\n", scope_tag, name.c_str());
 	cldb::Enum enumPrimitive = cldb::Enum(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()), scoped);
-    m_DB.AddPrimitive(cldb::Enum(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()), scoped));
-	AddSourceLocation(enum_decl->getLocation(), &enumPrimitive);
+
+	auto iter = m_DB.AddPrimitive(enumPrimitive);
+	AddSourceLocation(enum_decl->getLocation(), &(iter->second));
 
     LOG_PUSH_INDENT(ast);
 
@@ -932,8 +937,9 @@ void ASTConsumer::AddEnumDecl(clang::NamedDecl* decl, const std::string& name, c
 
         // Add to the database
 		cldb::EnumConstant enumConstantPrimitive = cldb::EnumConstant(m_DB.GetName(constant_name.c_str()), m_DB.GetName(name.c_str()), value_int);
-        m_DB.AddPrimitive(enumConstantPrimitive);
-		AddSourceLocation(constant_decl->getLocation(), &enumConstantPrimitive);
+     
+		auto iter = m_DB.AddPrimitive(enumConstantPrimitive);
+		AddSourceLocation(constant_decl->getLocation(), &(iter->second));
 
         LOG(ast, INFO, "   %s = 0x%x\n", constant_name.c_str(), value_int);
     }
@@ -1026,8 +1032,10 @@ void ASTConsumer::AddClassTemplateDecl(clang::NamedDecl* decl, const std::string
         }
 
 		cldb::Template templatePrimitive = cldb::Template(m_DB.GetName(name.c_str()), m_DB.GetName(parent_name.c_str()));
-        m_DB.AddPrimitive(templatePrimitive);
-		AddSourceLocation(template_decl->getLocation(), &templatePrimitive);
+ 
+		auto iter = m_DB.AddPrimitive(templatePrimitive);
+		AddSourceLocation(template_decl->getLocation(), &(iter->second));
+
         LOG(ast, INFO, "template %s\n", name.c_str());
     }
 }
@@ -1107,8 +1115,9 @@ void ASTConsumer::MakeFunction(clang::NamedDecl* decl, const std::string& functi
     // Add the function
     LOG(ast, INFO, "function %s\n", function_name.c_str());
 	cldb::Function functionPrimitive = cldb::Function(m_DB.GetName(function_name.c_str()), m_DB.GetName(parent_name.c_str()), unique_id);
-    m_DB.AddPrimitive(functionPrimitive);
-	AddSourceLocation(function_decl->getLocation(), &functionPrimitive);
+
+	auto iter = m_DB.AddPrimitive(functionPrimitive);
+	AddSourceLocation(function_decl->getLocation(), &(iter->second));
 
     LOG_PUSH_INDENT(ast);
 
@@ -1120,8 +1129,9 @@ void ASTConsumer::MakeFunction(clang::NamedDecl* decl, const std::string& functi
             return_parameter.qualifier.op == cldb::Qualifier::POINTER
                 ? "*"
                 : return_parameter.qualifier.op == cldb::Qualifier::REFERENCE ? "&" : "");
-        m_DB.AddPrimitive(return_parameter);
-		AddSourceLocation(function_decl->getLocation(), &return_parameter);
+
+		auto iter2 = m_DB.AddPrimitive(return_parameter);
+		AddSourceLocation(function_decl->getLocation(), &(iter2->second));
     }
     else
     {
@@ -1134,31 +1144,27 @@ void ASTConsumer::MakeFunction(clang::NamedDecl* decl, const std::string& functi
         LOG(ast, INFO, "%s%s%s %s\n", i->qualifier.is_const ? "const " : "", i->type.text.c_str(),
             i->qualifier.op == cldb::Qualifier::POINTER ? "*" : i->qualifier.op == cldb::Qualifier::REFERENCE ? "&" : "",
             i->name.text.c_str());
-        m_DB.AddPrimitive(*i);
 
-		AddSourceLocation(function_decl->getLocation(), &*i);
+		auto iter3 = m_DB.AddPrimitive(*i);
+		AddSourceLocation(function_decl->getLocation(), &(iter3->second));
     }
 
     LOG_POP_INDENT(ast);
 }
 
-void ASTConsumer::AddSourceLocation(const std::string sourceFilePath, const DeclInformation & declInfo)
+
+
+void ASTConsumer::AddSourceLocation(const clang::SourceLocation & sourceLocation, cldb::Primitive * primitive)
 {
+	const llvm::StringRef sourcePath = m_ASTContext->getSourceManager().getFilename(sourceLocation);
+
+	const std::string sourceFilePath = converToPreferredPath(sourcePath);
+	
+	//const std::string sourceFilePath = sourcePath.data();
 	assert(sourceFilePath.empty() == false);
 	if (sourceFilePath.empty() == false)
 	{
-		m_SourceFilePathOfDeclMap[sourceFilePath].push_back(declInfo);
+		m_SourceFilePathOfDeclMap[sourceFilePath].push_back(primitive);
 	}
-}
-
-void ASTConsumer::AddSourceLocation(const clang::SourceLocation & sourceLocation, const DeclInformation & declInfo)
-{
-	AddSourceLocation(m_ASTContext->getSourceManager().getFilename(sourceLocation).data(), declInfo);
-}
-
-void ASTConsumer::AddSourceLocation(const clang::SourceLocation & sourceLocation, const cldb::Primitive * primitive)
-{
-	assert(primitive != nullptr);
-	AddSourceLocation(sourceLocation, DeclInformation(primitive->name.text, primitive->kind));
 }
 

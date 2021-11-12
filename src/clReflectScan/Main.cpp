@@ -197,6 +197,7 @@ int main(int argc, const char* argv[])
 		LOG(warnings, INFO, "rootClass_typeName is not found");
 	}
 	
+	
 	UtilityHeaderGen utilityHeadergen{};
 	for (const std::string& sourceFilePath : sourceFilePathList)
 	{

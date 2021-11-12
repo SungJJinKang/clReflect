@@ -28,6 +28,14 @@ class UtilityHeaderGen
 {
 private:
 
+	static const cldb::Primitive::Kind PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE =
+		cldb::Primitive::Kind(
+		cldb::Primitive::Kind::KIND_CLASS | // struct or class
+		cldb::Primitive::Kind::KIND_ENUM |
+		cldb::Primitive::Kind::KIND_TEMPLATE // template type
+		//cldb::Primitive::Kind::KIND_TEMPLATE_TYPE // this is template instantiation
+		);
+
 	thread_local static std::map<cldb::u32, ksj::BaseTypeList> BaseTypeList; // key : Derived Class's Name Hash, Value : Base Classes of Derived Class's Name Hash
 
 	static std::vector<cldb::Name> GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db);
@@ -65,12 +73,12 @@ private:
 	);
 	
 	// Write Macros of Class Type to CodeGen
-	void WriteClassMacros(CodeGen& cg, const cldb::Name targetClassFullName, const std::string& rootclass_typename, cldb::Database& db);
+	void WriteClassMacros(CodeGen& cg, const cldb::Class* const targetClassPrimitive, const std::string& rootclass_typename, cldb::Database& db);
 
 	//return macros name
 	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName);
 
-	std::vector<cldb::Name> FindTargetTypesName(const std::string& sourceFilePath, const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
+	std::vector<cldb::Primitive*> FindTargetTypesName(const std::string& sourceFilePath, const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
 	
 public:
 
@@ -78,7 +86,8 @@ public:
 
 	UtilityHeaderGen();
 
-	//output of UtilityHeader should be placed at superjacent of target class
+	// output of UtilityHeader should be placed at superjacent of target class
+	// Warning : Evenry header files containing reflected type ( enum, template, class, struct ) must have sourceFile with same file name
 	void GenUtilityHeader
 	(
 		const std::string& sourceFilePath, 

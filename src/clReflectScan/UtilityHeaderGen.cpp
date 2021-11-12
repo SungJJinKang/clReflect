@@ -196,13 +196,13 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 void UtilityHeaderGen::WriteClassMacros
 (
 	CodeGen& cg, 
-	const cldb::Name targetClassFullName, 
+	const cldb::Class* const targetClassPrimitive,
 	const std::string& rootclass_typename, 
 	cldb::Database & db
 )
 {
-	const std::string macrobableClassFullTypeName = ConvertTypeNameToMacrobableTypeName(targetClassFullName.text); //test
-	const std::string macrobableClassShortTypeName = ConvertTypeNameToMacrobableTypeName(ConvertFullTypeNameToShortTypeName(targetClassFullName.text)); //test
+	const std::string macrobableClassFullTypeName = ConvertTypeNameToMacrobableTypeName(targetClassPrimitive->name.text); //test
+	const std::string macrobableClassShortTypeName = ConvertTypeNameToMacrobableTypeName(ConvertFullTypeNameToShortTypeName(targetClassPrimitive->name.text)); //test
 
 	// define full name macros. you should wrtie namespace with this. ex) GENERATE_BODY_test_base_chain__G
 	const std::string fullNamebodyMacros = "GENERATE_BODY_" + macrobableClassFullTypeName;
@@ -223,7 +223,7 @@ void UtilityHeaderGen::WriteClassMacros
 		const std::string baseChainListMacros = WriteInheritanceInformationMacros
 		(
 			cg,
-			targetClassFullName,
+			targetClassPrimitive->name,
 			rootclass_cldb_typename,
 			macrobableClassFullTypeName,
 			db
@@ -237,7 +237,7 @@ void UtilityHeaderGen::WriteClassMacros
 	}
 
 	// Define Current Type Alias
-	const std::string CurrentTypeAliasMacrosName = WriteCurrentTypeAliasMacros(cg, targetClassFullName, macrobableClassFullTypeName);
+	const std::string CurrentTypeAliasMacrosName = WriteCurrentTypeAliasMacros(cg, targetClassPrimitive->name, macrobableClassFullTypeName);
 	macrosNameList.push_back(CurrentTypeAliasMacrosName);
 	// 4. generate reflection variable, function, static functions, static variable
 
@@ -264,7 +264,7 @@ std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cl
 {
 	assert(targetClassFullName.text.empty() == false);
 	assert(targetClassFullName.hash != 0);
-	assert(macrobableClassFullTypeName.text.empty() == false);
+	assert(macrobableClassFullTypeName.empty() == false);
 
 	const std::string CurrentTypeAliasMacrosName = "CURRENT_TYPE_ALIAS_" + macrobableClassFullTypeName;
 	cg.Line();
@@ -276,7 +276,7 @@ std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cl
 	return CurrentTypeAliasMacrosName;
 }
 
-std::vector<cldb::Name> UtilityHeaderGen::FindTargetTypesName
+std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 (
 	const std::string& sourceFilePath,
 	const std::string& headerFilePath, 
@@ -284,13 +284,42 @@ std::vector<cldb::Name> UtilityHeaderGen::FindTargetTypesName
 	cldb::Database& db
 )
 {
-	std::vector<cldb::Name> targetTypesNameList;
+	std::vector<cldb::Primitive*> targetTypesNameList;
 
-	const std::map<std::string, std::vector<DeclInformation>>& declLocationMap = astConsumer.GetSourceFilePathOfDeclMap();
+	const std::map<std::string, std::vector<cldb::Primitive*>>& declLocationMap = astConsumer.GetSourceFilePathOfDeclMap();
 
+	// find declrations in source file
+	auto iter = declLocationMap.find(sourceFilePath);
+	if (iter != declLocationMap.end())
+	{
+		for (cldb::Primitive* const primitive : iter->second)
+		{
+			assert(primitive != nullptr);
+			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE && primitive->kind != 0)
+			{
+				// find UtilityHeader's target type!
+				targetTypesNameList.emplace_back(primitive);
+			}
+		}
+	}
+	
+	// find declrations in header file
+	iter = declLocationMap.find(headerFilePath);
+	if (iter != declLocationMap.end())
+	{
+		for (cldb::Primitive* const primitive : iter->second)
+		{
+			assert(primitive != nullptr);
+			if (UtilityHeaderGen::PRIMITIVE_KIND_TYPE_GENERATING_GENERATED_H_FILE && primitive->kind != 0)
+			{
+				// find UtilityHeader's target type!
+				targetTypesNameList.emplace_back(primitive);
+			}
+		}
 
+	}
 
-	return std::vector<cldb::Name>();
+	return targetTypesNameList;
 }
 
 
@@ -357,16 +386,27 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), targetHeaderFilePath.c_str());
 		cg.Line("#endif");
 
-		std::vector<cldb::Name> TargetTypesName = FindTargetTypesName(sourceFilePath, targetHeaderFilePath, astConsumer, db);
+		std::vector<cldb::Primitive*> UtilityHeaderTargetTypeList = FindTargetTypesName(sourceFilePath, targetHeaderFilePath, astConsumer, db);
 
-		for (cldb::Name& targetTypeName : TargetTypesName)
+		for (cldb::Primitive* const utilityHeaderTargetType : UtilityHeaderTargetTypeList)
 		{
-			WriteClassMacros(cg, targetTypeName, rootclass_typename, db);
+			switch (utilityHeaderTargetType->kind)
+			{
+			case cldb::Primitive::Kind::KIND_CLASS:
+				WriteClassMacros(cg, static_cast<cldb::Class*>(utilityHeaderTargetType), rootclass_typename, db);
+				break;
+
+			default:
+				break;
+			}
+			
+
+			cg.Line();
+			cg.Line();
+			cg.Line("-------------------------------------------");
+			cg.Line();
+			cg.Line();
 		}
-
-	
-
-		
 
 		cg.WriteToFile(outputPath.c_str());
 	}

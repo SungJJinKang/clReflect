@@ -24,18 +24,6 @@ namespace clang
     struct PrintingPolicy;
 }
 
-struct DeclInformation
-{
-	std::string QualifiedName; // decl full name ex) dooms::graphics::Graphics_Sever
-	cldb::Primitive::Kind Kind;
-
-	DeclInformation(const std::string& qualifiedName, cldb::Primitive::Kind kind)
-		: QualifiedName(qualifiedName), Kind(kind)
-	{
-
-	}
-};
-
 class ASTConsumer
 {
 public:
@@ -55,14 +43,12 @@ public:
     {
         return m_ReflectionSpecs;
     }
-	const std::map<std::string, std::vector<DeclInformation>>& GetSourceFilePathOfDeclMap()
+	const std::map<std::string, std::vector<cldb::Primitive*>>& GetSourceFilePathOfDeclMap()
 	{
 		return m_SourceFilePathOfDeclMap;
 	}
 
-	void AddSourceLocation(const std::string sourceFilePath, const DeclInformation& declInfo);
-	void AddSourceLocation(const clang::SourceLocation& sourceLocation, const DeclInformation& declInfo);
-	void AddSourceLocation(const clang::SourceLocation& sourceLocation, const cldb::Primitive* primitive);
+	void AddSourceLocation(const clang::SourceLocation& sourceLocation, cldb::Primitive* primitive);
 
 private:
     void AddDecl(clang::NamedDecl* decl, const std::string& parent_name, const clang::ASTRecordLayout* layout);
@@ -89,7 +75,7 @@ private:
 
 	// key : SourceFilePath of Decl 
 	// implemented 100%
-	std::map <std::string , std::vector<DeclInformation>> m_SourceFilePathOfDeclMap;
+	std::map <std::string , std::vector<cldb::Primitive*>> m_SourceFilePathOfDeclMap;
 
     bool m_AllowReflect;
 };

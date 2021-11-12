@@ -103,51 +103,89 @@ namespace
     }
 }
 
-static std::mutex CommonOptionsParserMutex{};
+namespace ksj
+{
+	static std::mutex CommonOptionsParserMutex{};
+}
 
 int main(int argc, const char* argv[])
 {
     float start = clock();
 
-    LOG_TO_STDOUT(main, ALL);
-	LOG_TO_STDOUT(warnings, INFO);
+	thread_local static bool isLogInitialized = false;
+	if(isLogInitialized == false)
+	{
+		isLogInitialized = true;
+		LOG_TO_STDOUT(main, ALL);
+		LOG_TO_STDOUT(main, WARNING);
+	}
 
-	std::unique_lock<std::mutex> lk_b(CommonOptionsParserMutex);
+	std::unique_lock<std::mutex> lk_b(ksj::CommonOptionsParserMutex);
 
     // Command-line options
+    //you can't put thread_local to this
     static llvm::cl::OptionCategory ToolCategoryOption("clreflect options");
-    static llvm::cl::cat ToolCategory(ToolCategoryOption);
-    static llvm::cl::opt<std::string> ReflectionSpecLog("spec_log", llvm::cl::desc("Specify reflection spec log filename"),
+	static llvm::cl::cat ToolCategory(ToolCategoryOption);
+	static llvm::cl::opt<std::string> ReflectionSpecLog("spec_log", llvm::cl::desc("Specify reflection spec log filename"),
                                                         ToolCategory, llvm::cl::value_desc("filename"));
-    static llvm::cl::opt<std::string> ASTLog("ast_log", llvm::cl::desc("Specify AST log filename"), ToolCategory,
+	static llvm::cl::opt<std::string> ASTLog("ast_log", llvm::cl::desc("Specify AST log filename"), ToolCategory,
                                              llvm::cl::value_desc("filename"));
-    static llvm::cl::opt<std::string> Output("output", llvm::cl::desc("Specify database output file, depending on extension"),
+	static llvm::cl::opt<std::string> Output("output", llvm::cl::desc("Specify database output file, depending on extension"),
                                              ToolCategory, llvm::cl::value_desc("filename"));
 	static llvm::cl::opt<std::string> RootClassTypeName("rootClass_typeName", llvm::cl::desc("Specify Root class typename including namespace"),
 		ToolCategory, llvm::cl::value_desc("type"));
-    static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
+	static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
 	
+	//auto option = llvm::cl::getRegisteredOptions(*llvm::cl::AllSubCommands);
+	//option["<source0> [... <sourceN>]"]->reset();
     // Parse command-line options
     auto options_parser = clang::tooling::CommonOptionsParser::create(argc, argv, ToolCategoryOption, llvm::cl::OneOrMore);
-  
+	
     if (!options_parser)
     {
         return 1;
     }
 
+	
     // Initialize inline ASM parsing
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmParser();
 
     // Create the clang tool that parses the input files
-    clang::tooling::ClangTool tool(options_parser->getCompilations(), options_parser->getSourcePathList());
+
+
+	// this looks hacky.
+	// but clang compiler doesn't support multithread ( it use static variable at many codes ). 
+	// so this is to do that
+	std::vector<std::string> sourcePaths = options_parser->getSourcePathList();
+    clang::tooling::ClangTool tool(options_parser->getCompilations(), sourcePaths);
 	
-	const std::vector<std::string> sourceFilePathList = options_parser->getSourcePathList();
 	const std::string outputFilePath = Output;
 	const std::string ast_logFilePath = ASTLog;
 	const std::string spec_logFilePath = ReflectionSpecLog;
 	const std::string rootclass_typename = RootClassTypeName;
 	const bool _Timing = Timing;
+	ReflectionSpecLog.reset();
+	ASTLog.reset();
+	Output.reset();
+	RootClassTypeName.reset();
+	Timing.reset();
+
+	for (auto iter = llvm::cl::AllSubCommands->OptionsMap.begin(); iter != llvm::cl::AllSubCommands->OptionsMap.end(); iter++)
+	{
+		iter->getValue()->setDefault();
+	}
+	for (auto iter = llvm::cl::AllSubCommands->PositionalOpts.begin(); iter != llvm::cl::AllSubCommands->PositionalOpts.end(); iter++)
+	{
+		(*iter)->setDefault();
+	}
+	for (auto iter = llvm::cl::AllSubCommands->SinkOpts.begin(); iter != llvm::cl::AllSubCommands->SinkOpts.end(); iter++)
+	{
+		(*iter)->setDefault();
+	}
+	
+
+	//llvm::cl::ResetAllOptionOccurrences();
 
 	lk_b.unlock();
 
@@ -173,7 +211,7 @@ int main(int argc, const char* argv[])
                     ast_consumer.WalkTranlationUnit(&context, tu_decl);
                 }).get()) != 0)
     {
-        return 1;
+        return 2;
     }
 
     float build = clock();
@@ -194,14 +232,19 @@ int main(int argc, const char* argv[])
 
 	if (rootclass_typename.empty() == true)
 	{
-		LOG(warnings, INFO, "rootClass_typeName is not found");
+		LOG(main, WARNING, "rootClass_typeName is not found\n");
 	}
 	
 	
 	UtilityHeaderGen utilityHeadergen{};
-	for (const std::string& sourceFilePath : sourceFilePathList)
+	LOG(main, ALL, "__sourceFilePathList count : %u\n", sourcePaths.size());
+	for (const std::string& sourceFilePath : sourcePaths)
 	{
-		utilityHeadergen.GenUtilityHeader(sourceFilePath, rootclass_typename, db, ast_consumer);
+		if (sourceFilePath.empty() == false)
+		{
+			LOG(main, ALL, "creating reflectionh file (%s)\n", sourceFilePath.c_str());
+			utilityHeadergen.GenUtilityHeader(sourceFilePath, rootclass_typename, db, ast_consumer);
+		}
 	}
 	
 

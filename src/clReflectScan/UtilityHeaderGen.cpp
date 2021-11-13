@@ -203,7 +203,7 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 
 		if (baseChainList.size() >= 2)
 		{
-			cg.Line("public: typedef %s Base;", baseChainList[1].text.c_str());
+			cg.Line("public: typedef %s Base;", baseChainList[baseChainList.size() - 2].text.c_str());
 		}
 	}
 
@@ -289,6 +289,11 @@ void UtilityHeaderGen::WriteClassMacros
 		cg.Line("//Type Short Name ( without namespace, only type name ) Version Macros.");
 		cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
 	}
+
+	cg.Line();
+	cg.Line();
+	cg.Line("#undef GENERATE_BODY");
+	cg.Line("#define GENERATE_BODY %s", fullNamebodyMacros.c_str());
 }
 
 

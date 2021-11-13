@@ -213,8 +213,8 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 			"inline static const unsigned long int BASE_CHAIN_LIST_LENGTH { %u }; \\",
 			baseChainList.size()
 		); 
-		cg.Line("virtual const unsigned long int* GetBastChainList() { return BASE_CHAIN_LIST; } \\"); 
-		cg.Line("virtual unsigned long int GetBastChainListLength() { return BASE_CHAIN_LIST_LENGTH; } \\");
+		cg.Line("virtual const unsigned long int* GetBastChainList() const { return BASE_CHAIN_LIST; } \\"); 
+		cg.Line("virtual unsigned long int GetBastChainListLength() const { return BASE_CHAIN_LIST_LENGTH; } \\");
 
 		if (baseChainList.size() >= 2)
 		{

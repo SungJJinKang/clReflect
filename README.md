@@ -12,7 +12,8 @@ Generate Compile-Time Reflection Data Header File ( inspided by Unreal Engine's 
 - Current Type Alias, Base Type Alias Macros ( Current:: , Base:: )     
 - Type Reflection Datas        
 
-[Look example ~.generated.h file](https://github.com/SungJJinKang/clReflect/tree/doom_engine_version/src/clReflectScan/example)           
+[Example Video](https://youtu.be/KGihaYTzqG8)             
+[~.reflection.h file example](https://github.com/SungJJinKang/clReflect/tree/doom_engine_version/src/clReflectScan/example)           
 
 
 Codes for multithread clang compilation ( clang has a lot of bugs when it used by multiple threads - https://forums.swift.org/t/explicit-versus-inferred-astcontexts/22225/13 )

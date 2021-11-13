@@ -31,6 +31,7 @@
 #include <clang/AST/TemplateName.h>
 #include <llvm/IR/Attributes.h>
 #include <llvm/Support/Path.h>
+#include <llvm/Support/FileCollector.h>
 #include <llvm/ADT/SmallVector.h>
 
 #include <stdarg.h>
@@ -1184,15 +1185,20 @@ void ASTConsumer::MakeFunction(clang::NamedDecl* decl, const std::string& functi
 
 void ASTConsumer::AddSourceLocation(const clang::SourceLocation & sourceLocation, cldb::Primitive * primitive)
 {
-	const llvm::StringRef sourcePath = m_ASTContext->getSourceManager().getFilename(sourceLocation);
-
-	const std::string sourceFilePath = converToPreferredPath(sourcePath);
+	llvm::StringRef sourceLocationPath = m_ASTContext->getSourceManager().getFilename(sourceLocation);
+	//llvm::sys::path::native(sourceLocationPat)
+	llvm::FileCollector::PathCanonicalizer pathCanonicalize{};
+	const llvm::FileCollector::PathCanonicalizer::PathStorage canonicalizedPathPathStorage = pathCanonicalize.canonicalize(sourceLocationPath);
 	
+	//Small Vector isn't made for string encoding. it means it doesn't have null terminator because it know element count
+
+	const std::string canonicalizedPath{ canonicalizedPathPathStorage.VirtualPath.data(), canonicalizedPathPathStorage.VirtualPath.data() + canonicalizedPathPathStorage.VirtualPath.size() };
+
 	//const std::string sourceFilePath = sourcePath.data();
-	assert(sourceFilePath.empty() == false);
-	if (sourceFilePath.empty() == false)
+	assert(canonicalizedPath.empty() == false);
+	if (canonicalizedPath.empty() == false)
 	{
-		m_SourceFilePathOfDeclMap[sourceFilePath].push_back(primitive);
+		m_SourceFilePathOfDeclMap[canonicalizedPath].push_back(primitive);
 	}
 }
 

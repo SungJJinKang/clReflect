@@ -350,7 +350,10 @@ std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen
 	cg.Line("public: \\");
 	cg.Line("inline static const unsigned long int TYPE_FULL_NAME_HASH_VALUE = %u; \\", targetClassFullName.hash);
 	cg.Line("inline static const char* const TYPE_FULL_NAME = \"%s\"; \\", targetClassFullName.text.c_str());
-	cg.Line("inline static const char* const TYPE_SHORT_NAME = \"%s\"; ", targetClassShortName.c_str());
+	cg.Line("inline static const char* const TYPE_SHORT_NAME = \"%s\"; \\",targetClassShortName.c_str());
+	cg.Line("virtual unsigned long int GetTypeHashVlue() const { return TYPE_FULL_NAME_HASH_VALUE; } \\");
+	cg.Line("virtual const char* GetTypeFullName() const { return TYPE_FULL_NAME; } \\");
+	cg.Line("virtual const char* GetTypeShortName() const { return TYPE_SHORT_NAME; }");
 
 	return CurrentTypeStaticHashValueAndFullName;
 }

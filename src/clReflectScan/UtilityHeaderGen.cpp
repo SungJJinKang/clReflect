@@ -23,7 +23,7 @@ using namespace cldb;
 
 namespace clDBHelper
 {
-	bool IsHasPureVirtualFunction(cldb::Class* const classType)
+	bool IsHasPureVirtualFunction(cldb::Type* const classType)
 	{
 		// TODO :
 		// iterate all function 
@@ -231,7 +231,7 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 void UtilityHeaderGen::WriteClassMacros
 (
 	CodeGen& cg, 
-	const cldb::Class* const targetClassPrimitive,
+	const cldb::Type* const targetClassPrimitive,
 	const std::string& rootclass_typename, 
 	const bool isLastType,
 	cldb::Database & db
@@ -282,7 +282,14 @@ void UtilityHeaderGen::WriteClassMacros
 	macrosNameList.push_back(CurrentTypeStaticHashValueAndFullName);
 	// 4. generate reflection variable, function, static functions, static variable
 
-	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName, !(targetClassPrimitive->is_class));
+	bool isClass = false;
+	if (targetClassPrimitive->kind == cldb::Primitive::KIND_CLASS)
+	{
+		const cldb::Class* classPrimitive = static_cast<const cldb::Class*>(targetClassPrimitive);
+		isClass = classPrimitive->is_class;
+	}
+
+	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName, !(isClass));
 	macrosNameList.push_back(WriteTypeCheckFunctionMcros);
 
 	// TODO : CompileType GetType template function like gettype.cpp file's
@@ -296,7 +303,8 @@ void UtilityHeaderGen::WriteClassMacros
 	{
 		cg.Line("%s \\", macro.c_str());
 	}
-	if (targetClassPrimitive->is_class == true)
+
+	if (isClass == true)
 	{
 		cg.Line("private:");
 	}
@@ -595,6 +603,8 @@ void UtilityHeaderGen::GenUtilityHeader
 			switch (UtilityHeaderTargetTypeList[i]->kind)
 			{
 			case cldb::Primitive::Kind::KIND_CLASS:
+			case cldb::Primitive::Kind::KIND_TEMPLATE:
+			case cldb::Primitive::Kind::KIND_TEMPLATE_TYPE:
 				WriteClassMacros
 				(
 					cg, 

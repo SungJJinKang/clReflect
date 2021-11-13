@@ -21,6 +21,17 @@
 
 using namespace cldb;
 
+namespace clDBHelper
+{
+	bool IsHasPureVirtualFunction(cldb::Class* const classType)
+	{
+		// iterate all function 
+		// find function having parent name same with class name
+		// use FunctionDecl->isPure
+		return false;
+	}
+}
+
 thread_local std::map<cldb::u32, ksj::BaseTypeList> UtilityHeaderGen::BaseTypeList{};
 
 UtilityHeaderGen::UtilityHeaderGen()
@@ -264,20 +275,23 @@ void UtilityHeaderGen::WriteClassMacros
 	macrosNameList.push_back(CurrentTypeStaticHashValueAndFullName);
 	// 4. generate reflection variable, function, static functions, static variable
 
-	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName);
+	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName, !(targetClassPrimitive->is_class));
 	macrosNameList.push_back(WriteTypeCheckFunctionMcros);
 
 
 	cg.Line();
 	cg.Line();
 	cg.Line("#undef %s", fullNamebodyMacros.c_str());
-	cg.Line("#define %s \\", fullNamebodyMacros.c_str());
+	cg.Line("#define %s(...) \\", fullNamebodyMacros.c_str());
 
 	for (const std::string& macro : macrosNameList)
 	{
 		cg.Line("%s \\", macro.c_str());
 	}
-	cg.Line("private:");
+	if (targetClassPrimitive->is_class == true)
+	{
+		cg.Line("private:");
+	}
 
 	cg.Line();
 	cg.Line();
@@ -287,13 +301,13 @@ void UtilityHeaderGen::WriteClassMacros
 	if (shortNamebodyMacros != fullNamebodyMacros)
 	{
 		cg.Line("//Type Short Name ( without namespace, only type name ) Version Macros.");
-		cg.Line("#define %s %s", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
+		cg.Line("#define %s(...) %s(__VA_ARGS__)", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
 	}
 
 	cg.Line();
 	cg.Line();
 	cg.Line("#undef GENERATE_BODY");
-	cg.Line("#define GENERATE_BODY %s", fullNamebodyMacros.c_str());
+	cg.Line("#define GENERATE_BODY(...) %s(__VA_ARGS__)", fullNamebodyMacros.c_str());
 }
 
 
@@ -332,7 +346,13 @@ std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen
 	return CurrentTypeStaticHashValueAndFullName;
 }
 
-std::string UtilityHeaderGen::WriteTypeCheckFunction(CodeGen & cg, const cldb::Name & targetClassFullName, const std::string & macrobableClassFullTypeName)
+std::string UtilityHeaderGen::WriteTypeCheckFunction
+(
+	CodeGen & cg, 
+	const cldb::Name & targetClassFullName, 
+	const std::string & macrobableClassFullTypeName,
+	const bool isStruct
+)
 {
 	assert(targetClassFullName.text.empty() == false);
 	assert(targetClassFullName.hash != 0);
@@ -343,7 +363,10 @@ std::string UtilityHeaderGen::WriteTypeCheckFunction(CodeGen & cg, const cldb::N
 	const std::string TypeCheckFunctionMacros = "TYPE_CHECK_FUNCTION_" + macrobableClassFullTypeName;
 	cg.Line("#undef %s", TypeCheckFunctionMacros.c_str());
 	cg.Line("#define %s \\", TypeCheckFunctionMacros.c_str());
-	cg.Line("private: \\");
+	if (isStruct == false)
+	{
+		cg.Line("private: \\");
+	}
 	cg.Line("attrNoReflect void __TYPE_CHECK() { static_assert(std::is_same_v<std::decay<decltype(*this)>::type, Current> == true, \"ERROR : WRONG TYPE. Please Check GENERATED_~ MACROS\");} \\");
 
 	return TypeCheckFunctionMacros;
@@ -438,7 +461,7 @@ void UtilityHeaderGen::GenUtilityHeader
 	if (extensionDotPos != std::string::npos)
 	{
 		const std::string targetHeaderFilePath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".h";
-		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".reflectionh";
+		const std::string outputPath = std::string{ sourceFilePath.begin(), sourceFilePath.begin() + extensionDotPos } +".reflection.h";
 
 		// Check types declared in outputPath
 		// Check record_decl->getLocation()
@@ -467,6 +490,7 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line("#ifdef %s", outputPathMacros.c_str());
 		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPathMacros.c_str(), ConvertNameToMacrobableName(targetHeaderFilePath).c_str());
 		cg.Line("#endif");
+		cg.Line("#define %s", outputPathMacros.c_str());
 
 		cg.Line();
 		cg.Line();

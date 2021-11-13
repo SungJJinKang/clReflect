@@ -868,13 +868,15 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
             // Fill in the missing class size
             const clang::ASTRecordLayout& layout = m_ASTContext->getASTRecordLayout(record_decl);
             class_ptr->size = layout.getSize().getQuantity();
-
+			
             for (size_t i = 0; i < base_names.size(); i++)
                 LOG_APPEND(ast, INFO, (i == 0) ? " : %s" : ", %s", base_names[i].text.c_str());
 
             LOG_NEWLINE(ast);
 
             // Populate class contents
+			// iterate all function, properties inside of class.
+			// parent name of them is class name.
             AddContainedDecls(decl, name, &layout);
 
 			//call AddSourceLocation function only when it's not forward declaration

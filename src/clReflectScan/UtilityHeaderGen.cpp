@@ -89,6 +89,10 @@ std::string UtilityHeaderGen::ConvertNameToMacrobableName(const std::string & fu
 		{
 			macrobableTypeName[i] = '_';
 		}
+		else if (macrobableTypeName[i] == '.')
+		{
+			macrobableTypeName[i] = '_';
+		}
 	}
 
 	return macrobableTypeName;
@@ -227,6 +231,7 @@ void UtilityHeaderGen::WriteClassMacros
 	CodeGen& cg, 
 	const cldb::Class* const targetClassPrimitive,
 	const std::string& rootclass_typename, 
+	const bool isLastType,
 	cldb::Database & db
 )
 {
@@ -304,10 +309,14 @@ void UtilityHeaderGen::WriteClassMacros
 		cg.Line("#define %s(...) %s(__VA_ARGS__)", shortNamebodyMacros.c_str(), fullNamebodyMacros.c_str());
 	}
 
-	cg.Line();
-	cg.Line();
-	cg.Line("#undef GENERATE_BODY");
-	cg.Line("#define GENERATE_BODY(...) %s(__VA_ARGS__)", fullNamebodyMacros.c_str());
+	if (isLastType == true)
+	{
+		cg.Line();
+		cg.Line();
+		cg.Line("#undef GENERATE_BODY");
+		cg.Line("#define GENERATE_BODY(...) %s(__VA_ARGS__)", fullNamebodyMacros.c_str());
+	}
+	
 }
 
 
@@ -488,8 +497,11 @@ void UtilityHeaderGen::GenUtilityHeader
 
 		const std::string outputPathMacros = ConvertNameToMacrobableName(outputPath);
 		cg.Line("#ifdef %s", outputPathMacros.c_str());
-		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPathMacros.c_str(), ConvertNameToMacrobableName(targetHeaderFilePath).c_str());
+		cg.Line();
+		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), outputPath.c_str());
+		cg.Line();
 		cg.Line("#endif");
+		cg.Line();
 		cg.Line("#define %s", outputPathMacros.c_str());
 
 		cg.Line();
@@ -517,15 +529,25 @@ void UtilityHeaderGen::GenUtilityHeader
 			}
 		}
 		
-		
+		bool isDataGenerated = false;
 
-		for (cldb::Primitive* const utilityHeaderTargetType : UtilityHeaderTargetTypeList)
+		for (size_t i = 0 ; i < UtilityHeaderTargetTypeList.size() ; i++)
 		{
+			assert(UtilityHeaderTargetTypeList != nullptr);
+
 			bool isSuccess = true;
-			switch (utilityHeaderTargetType->kind)
+			switch (UtilityHeaderTargetTypeList[i]->kind)
 			{
 			case cldb::Primitive::Kind::KIND_CLASS:
-				WriteClassMacros(cg, static_cast<cldb::Class*>(utilityHeaderTargetType), rootclass_typename, db);
+				WriteClassMacros
+				(
+					cg, 
+					static_cast<cldb::Class*>(UtilityHeaderTargetTypeList[i]), 
+					rootclass_typename, 
+					(i == UtilityHeaderTargetTypeList.size() - 1), 
+					db
+				);
+				isDataGenerated = true;
 				break;
 
 			default:
@@ -542,6 +564,11 @@ void UtilityHeaderGen::GenUtilityHeader
 				cg.Line();
 			}
 			
+		}
+
+		if (isDataGenerated == false)
+		{
+			LOG(UtilityHeaderGen, WARNING, "Any Type data is not generated. ( SourceFile Path : %s)\n", sourceFilePath.c_str());
 		}
 
 		cg.WriteToFile(outputPath.c_str());

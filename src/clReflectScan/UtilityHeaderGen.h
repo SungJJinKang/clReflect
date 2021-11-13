@@ -73,7 +73,7 @@ private:
 	);
 	
 	// Write Macros of Class Type to CodeGen
-	void WriteClassMacros(CodeGen& cg, const cldb::Class* const targetClassPrimitive, const std::string& rootclass_typename, cldb::Database& db);
+	void WriteClassMacros(CodeGen& cg, const cldb::Class* const targetClassPrimitive, const std::string& rootclass_typename,  const bool isLastType, cldb::Database& db);
 
 	//return macros name
 	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName);

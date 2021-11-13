@@ -33,7 +33,7 @@ void CodeGen::Line(const char* format, ...)
 		m_Text += "\t";
 
 	m_Text += buffer;
-	m_Text += "\r\n";
+	m_Text += "\n";
 }
 
 

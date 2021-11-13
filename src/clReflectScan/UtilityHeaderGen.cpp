@@ -213,8 +213,8 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 			"inline static const unsigned long int BASE_CHAIN_LIST_LENGTH { %u }; \\",
 			baseChainList.size()
 		); 
-		cg.Line("virtual const unsigned long int* GetBastChainList() const { return BASE_CHAIN_LIST; } \\"); 
-		cg.Line("virtual unsigned long int GetBastChainListLength() const { return BASE_CHAIN_LIST_LENGTH; } \\");
+		cg.Line("virtual const unsigned long int* GetBaseChainList() const { return BASE_CHAIN_LIST; } \\"); 
+		cg.Line("virtual unsigned long int GetBaseChainListLength() const { return BASE_CHAIN_LIST_LENGTH; } \\");
 
 		if (baseChainList.size() >= 2)
 		{
@@ -437,6 +437,56 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 	return targetTypesNameList;
 }
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
+bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath, CodeGen & newlyCreatedReflectionFile)
+{
+	FILE* outputFile = fopen(outputPath.c_str(), "r");
+
+	bool isReflectionFileChanged = false;
+
+	if (outputFile == 0)
+	{
+		isReflectionFileChanged = true;
+	}
+	else
+	{
+
+		static const int _EOF = -1;
+
+		char temp[100];
+
+		const std::string& reflectionFileString = newlyCreatedReflectionFile.GetText();
+
+		fseek(outputFile, 0L, SEEK_END);
+		const size_t existingReflectionsStringLength = ftell(outputFile);
+		if (reflectionFileString.size() == existingReflectionsStringLength)
+		{
+			//string length equal
+			fseek(outputFile, 0L, SEEK_SET);
+
+			size_t textIndex = 0;
+
+			while (fread(temp, sizeof(temp), 1, outputFile)) // fgets return null if it's end of file and didn't read anything
+			{
+				if (strncmp(reflectionFileString.data() + textIndex, temp, sizeof(temp)) != 0)
+				{
+					isReflectionFileChanged = true;
+					break;
+				}
+
+				textIndex += sizeof(temp);
+
+			} 
+			
+		}
+
+	    fclose(outputFile);
+	}
+
+	return isReflectionFileChanged;
+}
+
 
 
 void UtilityHeaderGen::GenUtilityHeader
@@ -536,7 +586,7 @@ void UtilityHeaderGen::GenUtilityHeader
 
 		for (size_t i = 0 ; i < UtilityHeaderTargetTypeList.size() ; i++)
 		{
-			assert(UtilityHeaderTargetTypeList != nullptr);
+			assert(UtilityHeaderTargetTypeList[i] != nullptr);
 
 			bool isSuccess = true;
 			switch (UtilityHeaderTargetTypeList[i]->kind)
@@ -574,7 +624,18 @@ void UtilityHeaderGen::GenUtilityHeader
 			LOG(UtilityHeaderGen, WARNING, "Any Type data is not generated. ( SourceFile Path : %s)\n", sourceFilePath.c_str());
 		}
 
-		cg.WriteToFile(outputPath.c_str());
+
+
+
+		// Check if file exist at outputPath
+		// If it exist, compare cg string with the file.
+		// If they equal, cg is written to outputPath. 
+		// Why need this? : Writing reflection.h file make compiler recompile sourcefile
+		if (CheckReflectionFileChanged(outputPath, cg) == true)
+		{
+
+			cg.WriteToFile(outputPath.c_str());
+		}
 	}
 	else
 	{

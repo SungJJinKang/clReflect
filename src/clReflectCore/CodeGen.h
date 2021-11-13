@@ -36,6 +36,7 @@ public:
 	void WriteToFile(const char* filename);
 
 	int Size() const { return m_Text.size(); }
+	const std::string& GetText() const { return m_Text; }
 
 private:
 	std::string m_Text;

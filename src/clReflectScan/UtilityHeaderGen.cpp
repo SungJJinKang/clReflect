@@ -25,6 +25,7 @@ namespace clDBHelper
 {
 	bool IsHasPureVirtualFunction(cldb::Class* const classType)
 	{
+		// TODO :
 		// iterate all function 
 		// find function having parent name same with class name
 		// use FunctionDecl->isPure
@@ -283,6 +284,7 @@ void UtilityHeaderGen::WriteClassMacros
 	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName, !(targetClassPrimitive->is_class));
 	macrosNameList.push_back(WriteTypeCheckFunctionMcros);
 
+	// TODO : CompileType GetType template function like gettype.cpp file's
 
 	cg.Line();
 	cg.Line();
@@ -647,24 +649,3 @@ void UtilityHeaderGen::GenUtilityHeader
 
 	
 }
-
-// 개발 방향 :
-// 클래스 명과 파일 명이 무조건 같게 강제하자.
-// 같은 파일명의 클래스 없으면 그냥 통과
-// 클래스 명과 Argument로 넘어오는 파일 명이 같은 경우를 찾으면 Reflection 데이터 생성
-
-// 여기서 그냥 BaseChain도 완전히 생성해버리자.
-// 어차피 Base 타고 올라가면 Base의 Hash값 모두 컴파일 타임에 만들어 낼 수 있다..
-// ex) BaseChain[] = { 현재 클래스 Hash 값, 부모 클래스 Hash 값.... };
-
-// GENERATE_BODY 매크로도 만들자.
-
-// Reflection 구조체를 가져오는 Static 함수 정의도 넣자.
-
-// 타입명은 같은데 네임스페이스가 다른 경우도 고려되어야한다.
-
-//개발 방향 1 : clscan하는 소스파일에서 확장자만 h로 바꾸어서 해당 header에 선언되어 있는 모든 클래서, 구조체, enum 등 generated.h가 필요한 타입들에 대해 하나의 파일에 다 담자. ( Nice )
-//
-//	고려 사항 : header만 있고 소스파일이 없는 경우? -> 이 경우 generated.h 생성 불가 -> 소스 파일이 없는 경우 에러를 발생시켜야한다.
-//
-//개발 방향 2 : clexport에서 생성 -> 다시 생성해야하는 것을 구분하지 못하는 문제가 발생 -> 결국 모든 header파일에 대한 generated_h를 다시 생성해야한다 -> 끔찍.

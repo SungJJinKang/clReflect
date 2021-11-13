@@ -240,7 +240,6 @@ int main(int argc, const char* argv[])
 	if (sourcePathList.empty() == false)
 	{
 		UtilityHeaderGen utilityHeadergen{};
-		LOG(main, ALL, "creating reflection.h file (%s)\n", sourcePathList[0].c_str());
 		utilityHeadergen.GenUtilityHeader(sourcePathList[0], rootclass_typename, db, ast_consumer);
 	}
 	

@@ -42,6 +42,7 @@ UtilityHeaderGen::UtilityHeaderGen()
 	{
 		isLogInitialized = true;
 		LOG_TO_STDOUT(UtilityHeaderGen, WARNING);
+		LOG_TO_STDOUT(UtilityHeaderGen, INFO);
 	}
 }
 
@@ -635,8 +636,8 @@ void UtilityHeaderGen::GenUtilityHeader
 		// Why need this? : Writing reflection.h file make compiler recompile sourcefile
 		if (CheckReflectionFileChanged(outputPath, cg) == true)
 		{
-
 			cg.WriteToFile(outputPath.c_str());
+			LOG(UtilityHeaderGen, INFO, "Success to create reflection.h file (%s)\n", outputPath.c_str());
 		}
 	}
 	else

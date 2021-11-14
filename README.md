@@ -8,7 +8,7 @@ Extended Feature added by SungJJinKang!!
 -------------------------
 
 Generate Compile-Time Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)          
-- HardCoded BaseChain Data ( https://github.com/SungJJinKang/Fast_Runtime_Type_Cas ting_cpp )       
+- HardCoded BaseChain Data ( https://github.com/SungJJinKang/Fast_Runtime_Type_Casting_cpp )       
 - Current Type Alias, Base Type Alias Macros ( Current:: , Base:: )     
 - Type Reflection Datas        
 

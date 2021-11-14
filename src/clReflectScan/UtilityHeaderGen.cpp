@@ -390,7 +390,7 @@ std::string UtilityHeaderGen::WriteTypeCheckFunction
 	{
 		cg.Line("private: \\");
 	}
-	cg.Line("attrNoReflect void __TYPE_CHECK() { static_assert(std::is_same_v<std::decay<decltype(*this)>::type, Current> == true, \"ERROR : WRONG TYPE. Please Check GENERATED_~ MACROS\");} \\");
+	cg.Line("attrNoReflect void __TYPE_CHECK() { static_assert(std::is_same_v<std::remove_reference<decltype(*this)>::type, Current> == true, \"ERROR : WRONG TYPE. Please Check GENERATED_~ MACROS\");} \\");
 
 	return TypeCheckFunctionMacros;
 }

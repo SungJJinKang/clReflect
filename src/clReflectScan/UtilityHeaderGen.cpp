@@ -574,6 +574,8 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 	return targetTypesNameList;
 }
 
+#define READ_BUFFER_SIZE 200
+
 bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath, CodeGen & newlyCreatedReflectionFile)
 {
 	FILE* outputFile = fopen(outputPath.c_str(), "r");
@@ -589,10 +591,47 @@ bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath
 
 		static const int _EOF = -1;
 
-		char temp[100];
+		char temp[READ_BUFFER_SIZE];
 
 		const std::string& reflectionFileString = newlyCreatedReflectionFile.GetText();
 
+		size_t textIndex = 0;
+
+		fseek(outputFile, 0L, SEEK_END);
+		const size_t existingReflectionsStringLength = ftell(outputFile); // this is file size, not string length in file
+		fseek(outputFile, 0L, SEEK_SET);
+
+		if (reflectionFileString.size() > existingReflectionsStringLength)
+		{// if string's size is bigger than file's size, string is always different with file
+			isReflectionFileChanged = true;
+		}
+		else
+		{// 
+			while (size_t size = fread(temp, 1, READ_BUFFER_SIZE, outputFile)) // fgets return null if it's end of file and didn't read anything
+			{
+				if (strncmp(reflectionFileString.data() + textIndex, temp, size) != 0)
+				{
+					isReflectionFileChanged = true;
+					break;
+				}
+
+				textIndex += size;
+
+			}
+
+			if (reflectionFileString.size() != textIndex)
+			{
+				isReflectionFileChanged = true;
+			}
+		}
+
+		
+
+
+
+		
+		/* This codes doesn't work
+		// Because ftell say
 		fseek(outputFile, 0L, SEEK_END);
 		const size_t existingReflectionsStringLength = ftell(outputFile);
 		if (reflectionFileString.size() == existingReflectionsStringLength)
@@ -613,13 +652,12 @@ bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath
 				textIndex += sizeof(temp);
 
 			} 
-			
 		}
 		else
 		{
 			isReflectionFileChanged = true;
 		}
-
+		*/
 	    fclose(outputFile);
 	}
 

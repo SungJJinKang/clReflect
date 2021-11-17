@@ -482,7 +482,7 @@ std::string UtilityHeaderGen::WriteCloneObject
 	cg.Line("{ \\");
 	cg.Line("	%s* clonedObject = nullptr; \\", rootclass_typename.c_str());
 	//cg.Line("	D_ASSERT(std::is_copy_constructible<%s>::value == true && std::is_base_of<dooms::DObejct, %s>::value == true); \\", targetClassFullName.text.c_str(), targetClassFullName.text.c_str());
-	cg.Line("	// std::vector<std::unique_ptr> can make false positive for std::is_copy_constructible<std::vector<std::unique_ptr>>::value. So Please explicitly delete copy constructor if you have this type variable \\");
+	cg.Line("	/* std::vector<std::unique_ptr> can make false positive for std::is_copy_constructible<std::vector<std::unique_ptr>>::value. So Please explicitly delete copy constructor if you have this type variable */ \\");
 	cg.Line("	if constexpr( (std::is_copy_constructible<%s>::value == true) && (std::is_base_of<%s, %s>::value == true) ) \\", targetClassFullName.text.c_str(), rootclass_typename.c_str(), targetClassFullName.text.c_str());
 	cg.Line("	{ \\");
 	cg.Line("		 clonedObject = dooms::CreateDObject<%s>(*this); \\", targetClassFullName.text.c_str());

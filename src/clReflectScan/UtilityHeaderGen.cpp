@@ -181,7 +181,8 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 	const cldb::Name& targetClassFullName,
 	const cldb::Name& rootclass_typename,
 	const std::string& macrobableClassFullTypeName,
-	cldb::Database& db
+	cldb::Database& db,
+	const bool isClass
 )
 {
 	std::string baseChainMacros;
@@ -203,9 +204,13 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 		baseChainMacros = "INHERITANCE_INFORMATION_" + macrobableClassFullTypeName;
 		cg.Line("#undef %s", baseChainMacros.c_str());
 		cg.Line("#define %s \\", baseChainMacros.c_str());
+		if (isClass == true)
+		{
+			cg.Line("public : \\");
+		}
 		cg.Line
 		(
-			"public: inline static const unsigned long int BASE_CHAIN_LIST[] { %s }; \\", 
+			"inline static const unsigned long int BASE_CHAIN_LIST[] { %s }; \\", 
 			baseChainText.c_str()
 		); // unsigned long guarantee 32bit
 		cg.Line
@@ -218,7 +223,7 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 
 		if (baseChainList.size() >= 2)
 		{
-			cg.Line("public: typedef %s Base;", baseChainList[baseChainList.size() - 2].text.c_str());
+			cg.Line("typedef %s Base;", baseChainList[baseChainList.size() - 2].text.c_str());
 		}
 	}
 
@@ -282,7 +287,8 @@ void UtilityHeaderGen::WriteClassMacros
 				targetClassPrimitive->name,
 				rootclass_cldb_typename,
 				macrobableClassFullTypeName,
-				db
+				db,
+				isClass
 			);
 
 			if (baseChainListMacros.empty() == false)
@@ -476,6 +482,7 @@ std::string UtilityHeaderGen::WriteCloneObject
 	cg.Line("{ \\");
 	cg.Line("	%s* clonedObject = nullptr; \\", rootclass_typename.c_str());
 	//cg.Line("	D_ASSERT(std::is_copy_constructible<%s>::value == true && std::is_base_of<dooms::DObejct, %s>::value == true); \\", targetClassFullName.text.c_str(), targetClassFullName.text.c_str());
+	cg.Line("	// std::vector<std::unique_ptr> can make false positive for std::is_copy_constructible<std::vector<std::unique_ptr>>::value. So Please explicitly delete copy constructor if you have this type variable \\");
 	cg.Line("	if constexpr( (std::is_copy_constructible<%s>::value == true) && (std::is_base_of<%s, %s>::value == true) ) \\", targetClassFullName.text.c_str(), rootclass_typename.c_str(), targetClassFullName.text.c_str());
 	cg.Line("	{ \\");
 	cg.Line("		 clonedObject = dooms::CreateDObject<%s>(*this); \\", targetClassFullName.text.c_str());
@@ -692,6 +699,7 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line();
 		cg.Line();
 		cg.Line("#include <type_traits>");
+		cg.Line("#include <cassert>");
 		cg.Line();
 		cg.Line();
 		cg.Line("//-------------------------------------------");

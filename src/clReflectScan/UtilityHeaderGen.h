@@ -70,7 +70,8 @@ private:
 		const cldb::Name& targetClassFullName,
 		const cldb::Name& rootclass_typename,
 		const std::string& macrobableClassFullTypeName,
-		cldb::Database& db
+		cldb::Database& db,
+		const bool isClass
 	);
 	
 	// Write Macros of Class Type to CodeGen

@@ -945,17 +945,16 @@ void ASTConsumer::AddEnumDecl(clang::NamedDecl* decl, const std::string& name, c
         // NOTE: May want to revisit this later
         std::string constant_name = constant_decl->getNameAsString();
 
-		if (parent_name != "")
-			constant_name = parent_name + "::" + constant_name; // ksj : never change this, this make constant_name unique
-            // enum's elements contain enum's full name
-            // ex)
-            // namespace testNamespace
-            // {
-            //      enum TestEnum
-            //      { TestEnumElement1, TestEnumElement2 };
-            // }
-            // testNamespace::TestEnum::TestEnumElement1's name is testNamespace::TestEnum::TestEnumElement1
-            // testNamespace::TestEnum::TestEnumElement2's name is testNamespace::TestEnum::TestEnumElement2
+		constant_name = name + "::" + constant_name; // ksj : never change this, this make constant_name unique	
+        // enum's elements contain enum's full name
+        // ex)
+        // namespace testNamespace
+        // {
+        //      enum TestEnum
+        //      { TestEnumElement1, TestEnumElement2 };
+        // }
+        // testNamespace::TestEnum::TestEnumElement1's name is testNamespace::TestEnum::TestEnumElement1
+        // testNamespace::TestEnum::TestEnumElement2's name is testNamespace::TestEnum::TestEnumElement2
 
 		
 

@@ -66,6 +66,7 @@ private:
 	std::string WriteInheritanceInformationMacros
 	(
 		CodeGen& cg,
+		const std::vector<cldb::Name>& baseChainList,
 		const cldb::Name& targetClassFullName,
 		const cldb::Name& rootclass_typename,
 		const std::string& macrobableClassFullTypeName,
@@ -76,9 +77,11 @@ private:
 	void WriteClassMacros(CodeGen& cg, const cldb::Type* const targetClassPrimitive, const std::string& rootclass_typename,  const bool isLastType, cldb::Database& db);
 
 	//return macros name
-	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName);
-	std::string WriteCurrentTypeStaticHashValueAndFullName(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& targetClassShortName, const std::string& macrobableClassFullTypeName);
-	std::string WriteTypeCheckFunction(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName, const bool isStruct);
+	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName, const bool isClass);
+	std::string WriteCurrentTypeStaticHashValueAndFullName(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& targetClassShortName, const std::string& macrobableClassFullTypeName, const bool isClass);
+	std::string WriteTypeCheckFunction(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName, const bool isClass);
+	std::string WriteCloneObject(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName, const std::string& rootclass_typename, const bool isClass);
+	std::string WriteAbstractCloneObject(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName, const std::string& rootclass_typename, const bool isClass);
 
 	std::vector<cldb::Primitive*> FindTargetTypesName(const std::string& sourceFilePath, const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
 	

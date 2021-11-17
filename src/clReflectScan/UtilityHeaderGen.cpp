@@ -21,19 +21,28 @@
 
 using namespace cldb;
 
-namespace clDBHelper
-{
-	bool IsHasPureVirtualFunction(cldb::Type* const classType)
-	{
-		// TODO :
-		// iterate all function 
-		// find function having parent name same with class name
-		// use FunctionDecl->isPure
-		return false;
-	}
-}
 
 thread_local std::map<cldb::u32, ksj::BaseTypeList> UtilityHeaderGen::BaseTypeList{};
+
+namespace utilityHeaderGenHelper
+{
+	template <typename PRIMITIVE_TYPE>
+	PRIMITIVE_TYPE* FindPrimitive(const cldb::Name name, cldb::Database& db)
+	{
+		PRIMITIVE_TYPE* foundType = nullptr;
+
+		assert(name.hash == 0);
+		assert(name.text.empty() == true);
+
+		auto iter = db.GetDBMap<PRIMITIVE_TYPE>().find(name.hash);
+		if (iter != db.GetDBMap<PRIMITIVE_TYPE>().end())
+		{
+			foundType = &(iter->second);
+		}
+
+		return foundType;
+	}
+}
 
 UtilityHeaderGen::UtilityHeaderGen()
 {
@@ -168,28 +177,17 @@ cldb::Name UtilityHeaderGen::FindTargetClass(const std::string & className, cldb
 std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 (
 	CodeGen& cg,
+	const std::vector<cldb::Name>& baseChainList,
 	const cldb::Name& targetClassFullName,
 	const cldb::Name& rootclass_typename,
 	const std::string& macrobableClassFullTypeName,
 	cldb::Database& db
 )
 {
-
 	std::string baseChainMacros;
 
-
-	std::vector<cldb::Name> baseChainList;
-	// if root class, return false
-	const bool isSuccess = GenerateBaseChainList_RecursiveFunction
-	(
-		targetClassFullName,
-		rootclass_typename,
-		db,
-		baseChainList
-	);
-
 	//if class is rootclass or inherited from root class, it never return false and empty list.
-	if (isSuccess == true && baseChainList.empty() == false)
+	if (baseChainList.empty() == false)
 	{
 		cg.Line();
 
@@ -252,44 +250,81 @@ void UtilityHeaderGen::WriteClassMacros
 
 	std::vector<std::string> macrosNameList;
 	
-	if (rootclass_typename.empty() == false)
-	{
-		// 3. generate base chain data ( implemented 100% )
-
-		cldb::Name rootclass_cldb_typename = db.GetName(rootclass_typename.c_str());
-
-		const std::string baseChainListMacros = WriteInheritanceInformationMacros
-		(
-			cg,
-			targetClassPrimitive->name,
-			rootclass_cldb_typename,
-			macrobableClassFullTypeName,
-			db
-		);
-
-		if (baseChainListMacros.empty() == false)
-		{
-			macrosNameList.push_back(baseChainListMacros);
-		}
-
-	}
-
-	// Define Current Type Alias
-	const std::string CurrentTypeAliasMacrosName = WriteCurrentTypeAliasMacros(cg, targetClassPrimitive->name, macrobableClassFullTypeName);
-	macrosNameList.push_back(CurrentTypeAliasMacrosName);
-
-	const std::string CurrentTypeStaticHashValueAndFullName = WriteCurrentTypeStaticHashValueAndFullName(cg, targetClassPrimitive->name, targetClassShortTypeName, macrobableClassFullTypeName);
-	macrosNameList.push_back(CurrentTypeStaticHashValueAndFullName);
-	// 4. generate reflection variable, function, static functions, static variable
-
-	bool isClass = false;
+	bool isClass = false; // class or struct?
 	if (targetClassPrimitive->kind == cldb::Primitive::KIND_CLASS)
 	{
 		const cldb::Class* classPrimitive = static_cast<const cldb::Class*>(targetClassPrimitive);
-		isClass = classPrimitive->is_class;
+		isClass = classPrimitive->is_class; 
 	}
 
-	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName, !(isClass));
+
+	if (rootclass_typename.empty() == false)
+	{
+		// 3. generate base chain data ( implemented 100% )
+		const cldb::Name rootclass_cldb_typename = db.GetName(rootclass_typename.c_str());
+
+		std::vector<cldb::Name> baseChainList;
+		// if root class, return false
+		const bool isSuccess = GenerateBaseChainList_RecursiveFunction
+		(
+			targetClassPrimitive->name,
+			rootclass_cldb_typename,
+			db,
+			baseChainList
+		);
+
+		if (isSuccess == true)
+		{
+			const std::string baseChainListMacros = WriteInheritanceInformationMacros
+			(
+				cg,
+				baseChainList,
+				targetClassPrimitive->name,
+				rootclass_cldb_typename,
+				macrobableClassFullTypeName,
+				db
+			);
+
+			if (baseChainListMacros.empty() == false)
+			{
+				macrosNameList.push_back(baseChainListMacros);
+			}
+
+
+
+			if (baseChainList[0].text == rootclass_typename.c_str())
+			{// if class is inherited from root class
+
+				if (targetClassPrimitive->name.text == rootclass_typename.c_str())
+				{
+					const std::string CloneObjectMacrosName = WriteAbstractCloneObject(cg, targetClassPrimitive->name, macrobableClassFullTypeName, rootclass_typename, isClass);
+					macrosNameList.push_back(CloneObjectMacrosName);
+				}
+				else
+				{
+					const std::string CloneObjectMacrosName = WriteCloneObject(cg, targetClassPrimitive->name, macrobableClassFullTypeName, rootclass_typename, isClass);
+					macrosNameList.push_back(CloneObjectMacrosName);
+				}
+
+			}
+		}
+	}
+
+	// Define Current Type Alias
+	const std::string CurrentTypeAliasMacrosName = WriteCurrentTypeAliasMacros(cg, targetClassPrimitive->name, macrobableClassFullTypeName, isClass);
+	macrosNameList.push_back(CurrentTypeAliasMacrosName);
+
+	const std::string CurrentTypeStaticHashValueAndFullNameMacrosName = WriteCurrentTypeStaticHashValueAndFullName(cg, targetClassPrimitive->name, targetClassShortTypeName, macrobableClassFullTypeName, isClass);
+	macrosNameList.push_back(CurrentTypeStaticHashValueAndFullNameMacrosName);
+	// 4. generate reflection variable, function, static functions, static variable
+
+	
+	
+	
+	
+
+	
+	const std::string WriteTypeCheckFunctionMcros = WriteTypeCheckFunction(cg, targetClassPrimitive->name, targetClassShortTypeName, isClass);
 	macrosNameList.push_back(WriteTypeCheckFunctionMcros);
 
 	// TODO : CompileType GetType template function like gettype.cpp file's
@@ -331,7 +366,13 @@ void UtilityHeaderGen::WriteClassMacros
 }
 
 
-std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cldb::Name& targetClassFullName, const std::string & macrobableClassFullTypeName)
+std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros
+(
+	CodeGen & cg, 
+	const cldb::Name& targetClassFullName, 
+	const std::string & macrobableClassFullTypeName,
+	const bool isClass
+)
 {
 	assert(targetClassFullName.text.empty() == false);
 	assert(targetClassFullName.hash != 0);
@@ -342,12 +383,23 @@ std::string UtilityHeaderGen::WriteCurrentTypeAliasMacros(CodeGen & cg, const cl
 	const std::string CurrentTypeAliasMacrosName = "CURRENT_TYPE_ALIAS_" + macrobableClassFullTypeName;
 	cg.Line("#undef %s", CurrentTypeAliasMacrosName.c_str());
 	cg.Line("#define %s \\", CurrentTypeAliasMacrosName.c_str());
-	cg.Line("public: typedef %s Current;", targetClassFullName.text.c_str());
+	if (isClass == true)
+	{
+		cg.Line("public : \\");
+	}
+	cg.Line("typedef %s Current;", targetClassFullName.text.c_str());
 
 	return CurrentTypeAliasMacrosName;
 }
 
-std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen & cg, const cldb::Name & targetClassFullName, const std::string& targetClassShortName, const std::string & macrobableClassFullTypeName)
+std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName
+(
+	CodeGen & cg, 
+	const cldb::Name & targetClassFullName, 
+	const std::string& targetClassShortName, 
+	const std::string & macrobableClassFullTypeName,
+	const bool isClass
+)
 {
 	assert(targetClassFullName.text.empty() == false);
 	assert(targetClassFullName.hash != 0);
@@ -358,7 +410,10 @@ std::string UtilityHeaderGen::WriteCurrentTypeStaticHashValueAndFullName(CodeGen
 	const std::string CurrentTypeStaticHashValueAndFullName = "TYPE_FULLNAME_HASH_VALUE_NAME_STRING_" + macrobableClassFullTypeName;
 	cg.Line("#undef %s", CurrentTypeStaticHashValueAndFullName.c_str());
 	cg.Line("#define %s \\", CurrentTypeStaticHashValueAndFullName.c_str());
-	cg.Line("public: \\");
+	if (isClass == true)
+	{
+		cg.Line("public : \\");
+	}
 	cg.Line("inline static const unsigned long int TYPE_FULL_NAME_HASH_VALUE = %u; \\", targetClassFullName.hash);
 	cg.Line("inline static const char* const TYPE_FULL_NAME = \"%s\"; \\", targetClassFullName.text.c_str());
 	cg.Line("inline static const char* const TYPE_SHORT_NAME = \"%s\"; \\",targetClassShortName.c_str());
@@ -374,7 +429,7 @@ std::string UtilityHeaderGen::WriteTypeCheckFunction
 	CodeGen & cg, 
 	const cldb::Name & targetClassFullName, 
 	const std::string & macrobableClassFullTypeName,
-	const bool isStruct
+	const bool isClass
 )
 {
 	assert(targetClassFullName.text.empty() == false);
@@ -386,13 +441,77 @@ std::string UtilityHeaderGen::WriteTypeCheckFunction
 	const std::string TypeCheckFunctionMacros = "TYPE_CHECK_FUNCTION_" + macrobableClassFullTypeName;
 	cg.Line("#undef %s", TypeCheckFunctionMacros.c_str());
 	cg.Line("#define %s \\", TypeCheckFunctionMacros.c_str());
-	if (isStruct == false)
+	if (isClass == true)
 	{
-		cg.Line("private: \\");
+		cg.Line("private : \\");
 	}
 	cg.Line("attrNoReflect void __TYPE_CHECK() { static_assert(std::is_same_v<std::decay<decltype(*this)>::type, Current> == true, \"ERROR : WRONG TYPE. Please Check GENERATED_~ MACROS\");} \\");
 
 	return TypeCheckFunctionMacros;
+}
+
+std::string UtilityHeaderGen::WriteCloneObject
+(
+	CodeGen & cg, 
+	const cldb::Name & targetClassFullName, 
+	const std::string & macrobableClassFullTypeName, 
+	const std::string& rootclass_typename,
+	const bool isClass
+)
+{
+	assert(targetClassFullName.text.empty() == false);
+	assert(targetClassFullName.hash != 0);
+	assert(macrobableClassFullTypeName.empty() == false);
+
+	cg.Line();
+	cg.Line();
+	const std::string CloneObjectMacros = "CLONE_OBJECT_" + macrobableClassFullTypeName;
+	cg.Line("#undef %s", CloneObjectMacros.c_str());
+	cg.Line("#define %s \\", CloneObjectMacros.c_str());
+	if (isClass == true)
+	{
+		cg.Line("public : \\");
+	}
+	cg.Line("virtual %s* CloneObject() const \\", rootclass_typename.c_str());
+	cg.Line("{ \\");
+	cg.Line("	%s* clonedObject = nullptr; \\", rootclass_typename.c_str());
+	//cg.Line("	D_ASSERT(std::is_copy_constructible<%s>::value == true && std::is_base_of<dooms::DObejct, %s>::value == true); \\", targetClassFullName.text.c_str(), targetClassFullName.text.c_str());
+	cg.Line("	if constexpr( (std::is_copy_constructible<%s>::value == true) && (std::is_base_of<%s, %s>::value == true) ) \\", targetClassFullName.text.c_str(), rootclass_typename.c_str(), targetClassFullName.text.c_str());
+	cg.Line("	{ \\");
+	cg.Line("		 clonedObject = dooms::CreateDObject<%s>(*this); \\", targetClassFullName.text.c_str());
+	cg.Line("	} \\");
+	cg.Line("	assert(clonedObject != nullptr);	\\");
+	cg.Line("	return clonedObject;	\\");
+	cg.Line("}");
+
+	return CloneObjectMacros;
+}
+
+std::string UtilityHeaderGen::WriteAbstractCloneObject
+(
+	CodeGen & cg, 
+	const cldb::Name & targetClassFullName, 
+	const std::string & macrobableClassFullTypeName, 
+	const std::string& rootclass_typename,
+	const bool isClass
+)
+{
+	assert(targetClassFullName.text.empty() == false);
+	assert(targetClassFullName.hash != 0);
+	assert(macrobableClassFullTypeName.empty() == false);
+
+	cg.Line();
+	cg.Line();
+	const std::string CloneObjectMacros = "CLONE_OBJECT_" + macrobableClassFullTypeName;
+	cg.Line("#undef %s", CloneObjectMacros.c_str());
+	cg.Line("#define %s \\", CloneObjectMacros.c_str());
+	if (isClass == true)
+	{
+		cg.Line("public : \\");
+	}
+	cg.Line("virtual %s* CloneObject() const { assert(false); return nullptr; }", rootclass_typename.c_str());
+
+	return CloneObjectMacros;
 }
 
 std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
@@ -448,8 +567,6 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 	return targetTypesNameList;
 }
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-
 bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath, CodeGen & newlyCreatedReflectionFile)
 {
 	FILE* outputFile = fopen(outputPath.c_str(), "r");
@@ -490,6 +607,10 @@ bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath
 
 			} 
 			
+		}
+		else
+		{
+			isReflectionFileChanged = true;
 		}
 
 	    fclose(outputFile);

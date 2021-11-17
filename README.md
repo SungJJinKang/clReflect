@@ -8,14 +8,14 @@ Extended Feature added by SungJJinKang!!
 -------------------------
 
 Generate Compile-Time Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)          
-- HardCoded BaseChain Data ( https://github.com/SungJJinKang/Fast_Runtime_Type_Cas ting_cpp )       
+- HardCoded BaseChain Data ( https://github.com/SungJJinKang/Fast_Runtime_Type_Casting_cpp )       
 - Current Type Alias, Base Type Alias Macros ( Current:: , Base:: )     
 - Type Reflection Datas        
+- [Example Video](https://youtu.be/KGihaYTzqG8)             
+- [~.reflection.h file example](https://github.com/SungJJinKang/clReflect/tree/doom_engine_version/src/clReflectScan/example)           
 
-[Look example ~.generated.h file](https://github.com/SungJJinKang/clReflect/tree/doom_engine_version/src/clReflectScan/example)           
 
-
-Codes for multithread clang compilation ( clang has a lot of bugs when it used by multiple threads - https://forums.swift.org/t/explicit-versus-inferred-astcontexts/22225/13 )
+Codes for multithread clang compilation ( clang has a lot of bugs when it used by multiple threads - https://forums.swift.org/t/explicit-versus-inferred-astcontexts/22225/13, https://stackoverflow.com/questions/59589065/how-to-use-clang-libtooling-multiple-times/69955089#69955089 )
 
 --------------------------------------------------
 

@@ -179,7 +179,8 @@ namespace
     };
 
     Status ParseBaseClass(ASTConsumer& consumer, cldb::Name derived_type_name, const clang::CXXBaseSpecifier& base,
-                          cldb::Name& base_name)
+                          cldb::Name& base_name, const size_t inheritOrder)
+		// inheritLoc : order of declaring inheritance
     {
         // Get canonical base type
         ClangASTType base_type(base.getType());
@@ -199,10 +200,14 @@ namespace
         Status status = ParseTemplateSpecialisation(consumer, base_type.type, type_name_str);
         if (status.HasWarnings())
             return status;
-
+		
+		//base_type.qual_ty
         cldb::Database& db = consumer.GetDB();
         base_name = db.GetName(type_name_str.c_str());
-        db.AddTypeInheritance(derived_type_name, base_name);
+        const cldb::Name typeInheritanceName = db.AddTypeInheritance(derived_type_name, base_name);
+
+		consumer.GetTypeInheritanceDeclararingOrder().insert_or_assign(typeInheritanceName.hash, inheritOrder);
+
         return Status();
     }
 
@@ -292,7 +297,7 @@ namespace
                  base_it != cts_decl->bases_end(); base_it++)
             {
                 cldb::Name base_name;
-                Status status = ParseBaseClass(consumer, type_name, *base_it, base_name);
+                Status status = ParseBaseClass(consumer, type_name, *base_it, base_name, base_it - cts_decl->bases_begin());
                 if (status.HasWarnings())
                     return Status::JoinWarn(status, "Failure to create template type due to invalid base class");
                 base_names.push_back(base_name);
@@ -826,7 +831,7 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
              base_it != record_decl->bases_end(); base_it++)
         {
             cldb::Name base_name;
-            Status status = ParseBaseClass(*this, type_name, *base_it, base_name);
+            Status status = ParseBaseClass(*this, type_name, *base_it, base_name, base_it - record_decl->bases_begin());
             if (status.HasWarnings())
             {
                 status.Print(record_decl->getLocation(), m_ASTContext->getSourceManager(),

@@ -83,7 +83,7 @@ void cldb::Database::AddContainerInfo(const std::string& container, const std::s
 }
 
 
-void cldb::Database::AddTypeInheritance(const Name& derived_type, const Name& base_type)
+cldb::Name cldb::Database::AddTypeInheritance(const Name& derived_type, const Name& base_type)
 {
 	std::string text = base_type.text + "<-" + derived_type.text;
 	TypeInheritance ti;
@@ -91,6 +91,8 @@ void cldb::Database::AddTypeInheritance(const Name& derived_type, const Name& ba
 	ti.derived_type = derived_type;
 	ti.base_type = base_type;
 	m_TypeInheritances[ti.name.hash] = ti;
+
+	return ti.name;
 }
 
 

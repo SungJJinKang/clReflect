@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <exception>
 
 using namespace cldb;
 
@@ -51,11 +52,12 @@ UtilityHeaderGen::UtilityHeaderGen()
 	{
 		isLogInitialized = true;
 		LOG_TO_STDOUT(UtilityHeaderGen, WARNING);
+		LOG_TO_STDOUT(UtilityHeaderGen, ERROR);
 		LOG_TO_STDOUT(UtilityHeaderGen, INFO);
 	}
 }
 
-std::vector<cldb::Name> UtilityHeaderGen::GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db)
+const std::vector<cldb::TypeInheritance>& UtilityHeaderGen::GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db)
 {
 	ksj::BaseTypeList& baseTypeList = BaseTypeList[searchDerivedClassNameHash];
 	if (baseTypeList.isInitialized == false)
@@ -72,14 +74,15 @@ std::vector<cldb::Name> UtilityHeaderGen::GetBaseTypesName(const cldb::u32 searc
 
 			if (searchDerivedClassNameHash == inherit.derived_type.hash) // hash guarantee uniqueness
 			{
-				baseTypeList.BaseTypeNameList.push_back(inherit.base_type);
+				//baseTypeList.BaseTypeNameList.push_back(inherit.base_type);
+				baseTypeList.TypeInheritanceList.push_back(inherit);
 			}
 		}
 
 		baseTypeList.isInitialized = true;
 	}
 	
-	return baseTypeList.BaseTypeNameList;
+	return baseTypeList.TypeInheritanceList;
 }
 
 std::string UtilityHeaderGen::ConvertNameToMacrobableName(const std::string & fullTypeName)
@@ -127,6 +130,7 @@ bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 	const cldb::Name targetClassName,
 	const cldb::Name targetRootClassName,
 	cldb::Database& db,
+	ASTConsumer& astConsumer,
 	std::vector<cldb::Name>& baseChainTypeNameList
 )
 {
@@ -138,14 +142,30 @@ bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 	}
 	else
 	{
-		std::vector<cldb::Name> baseClassList = GetBaseTypesName(targetClassName.hash, db);
-		if (baseClassList.empty() == false)
+		const std::vector<cldb::TypeInheritance>& typeInheritanceList = GetBaseTypesName(targetClassName.hash, db);
+		if (typeInheritanceList.empty() == false)
 		{
-			for (cldb::Name& baseClassName : baseClassList)
+			for (size_t i = 0 ; i < typeInheritanceList.size() ; i++)
 			{
-				const bool result = GenerateBaseChainList_RecursiveFunction(baseClassName, targetRootClassName, db, baseChainTypeNameList);
+				const bool result = GenerateBaseChainList_RecursiveFunction(typeInheritanceList[i].base_type, targetRootClassName, db, astConsumer, baseChainTypeNameList);
 				if (result == true)
 				{
+					auto iter = astConsumer.GetTypeInheritanceDeclararingOrder().find(typeInheritanceList[i].name.hash);
+					assert(iter != astConsumer.GetTypeInheritanceDeclararingOrder().end());
+
+					const size_t inheritanceOrder = iter->second;
+
+					if (inheritanceOrder != 0)
+					{
+						LOG(UtilityHeaderGen, ERROR, "Inherited class ( %s ) of DObject should inherit DObject's subclass at first pos. Please put declaration of inheriting ( %s ) from ( %s ) at firt pos", targetClassName.text.c_str(), typeInheritanceList[i].base_type, typeInheritanceList[i].derived_type);
+
+						throw std::exception("Inherited class ( %s ) of DObject should inherit DObject's subclass at first pos");
+					}
+
+					// TODO : Check inherit at first pos.
+					// ex ) class GraphicsServer : public ISingleton, public DObject  <-- This can make problem!! 
+					//      Because CastTo is implmented with reinterpret_cast, DObject's virtual pointer should be located at first address of object
+
 					// Root class is found while travel recursive function!!
 					baseChainTypeNameList.push_back(targetClassName);
 					return true;
@@ -237,7 +257,8 @@ void UtilityHeaderGen::WriteClassMacros
 	const cldb::Type* const targetClassPrimitive,
 	const std::string& rootclass_typename, 
 	const bool isLastType,
-	cldb::Database & db
+	cldb::Database & db,
+	ASTConsumer& astConsumer
 )
 {
 	const std::string targetClassShortTypeName = ConvertFullTypeNameToShortTypeName(targetClassPrimitive->name.text);
@@ -275,6 +296,7 @@ void UtilityHeaderGen::WriteClassMacros
 			targetClassPrimitive->name,
 			rootclass_cldb_typename,
 			db,
+			astConsumer,
 			baseChainList
 		);
 
@@ -762,41 +784,52 @@ void UtilityHeaderGen::GenUtilityHeader
 		
 		bool isDataGenerated = false;
 
-		for (size_t i = 0 ; i < UtilityHeaderTargetTypeList.size() ; i++)
+		try
 		{
-			assert(UtilityHeaderTargetTypeList[i] != nullptr);
 
-			bool isSuccess = true;
-			switch (UtilityHeaderTargetTypeList[i]->kind)
+			for (size_t i = 0; i < UtilityHeaderTargetTypeList.size(); i++)
 			{
-			case cldb::Primitive::Kind::KIND_CLASS:
-			case cldb::Primitive::Kind::KIND_TEMPLATE:
-			case cldb::Primitive::Kind::KIND_TEMPLATE_TYPE:
-				WriteClassMacros
-				(
-					cg, 
-					static_cast<cldb::Class*>(UtilityHeaderTargetTypeList[i]), 
-					rootclass_typename, 
-					(i == UtilityHeaderTargetTypeList.size() - 1), 
-					db
-				);
-				isDataGenerated = true;
-				break;
+				assert(UtilityHeaderTargetTypeList[i] != nullptr);
 
-			default:
-				isSuccess = false;
-				break;
+				bool isSuccess = true;
+				switch (UtilityHeaderTargetTypeList[i]->kind)
+				{
+				case cldb::Primitive::Kind::KIND_CLASS:
+				case cldb::Primitive::Kind::KIND_TEMPLATE:
+				case cldb::Primitive::Kind::KIND_TEMPLATE_TYPE:
+					WriteClassMacros
+					(
+						cg,
+						static_cast<cldb::Class*>(UtilityHeaderTargetTypeList[i]),
+						rootclass_typename,
+						(i == UtilityHeaderTargetTypeList.size() - 1),
+						db,
+						astConsumer
+					);
+					isDataGenerated = true;
+					break;
+
+				default:
+					isSuccess = false;
+					break;
+				}
+
+				if (isSuccess == true)
+				{
+					cg.Line();
+					cg.Line();
+					cg.Line("//-------------------------------------------");
+					cg.Line();
+					cg.Line();
+				}
+
 			}
-			
-			if (isSuccess == true)
-			{
-				cg.Line();
-				cg.Line();
-				cg.Line("//-------------------------------------------");
-				cg.Line();
-				cg.Line();
-			}
-			
+
+		}
+		catch (const std::exception e)
+		{
+			LOG(UtilityHeaderGen, WARNING, "Exception!! ( message : %s )", e.what());
+			isDataGenerated = false;
 		}
 
 		if (isDataGenerated == false)
@@ -811,7 +844,7 @@ void UtilityHeaderGen::GenUtilityHeader
 		// If it exist, compare cg string with the file.
 		// If they equal, cg is written to outputPath. 
 		// Why need this? : Writing reflection.h file make compiler recompile sourcefile
-		if (CheckReflectionFileChanged(outputPath, cg) == true)
+		if (isDataGenerated == true && CheckReflectionFileChanged(outputPath, cg) == true)
 		{
 			cg.WriteToFile(outputPath.c_str());
 			LOG(UtilityHeaderGen, INFO, "Success to create reflection.h file (%s)\n", outputPath.c_str());

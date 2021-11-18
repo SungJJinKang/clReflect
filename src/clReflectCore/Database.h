@@ -625,7 +625,7 @@ namespace cldb
 		void AddBaseTypePrimitives();
 
 		void AddContainerInfo(const std::string& container, const std::string& read_iterator, const std::string& write_iterator, bool has_key);
-		void AddTypeInheritance(const Name& derived_type, const Name& base_type);
+		cldb::Name AddTypeInheritance(const Name& derived_type, const Name& base_type);
 
 		const Name& GetName(const char* text);
 		const Name& GetName(u32 hash) const;

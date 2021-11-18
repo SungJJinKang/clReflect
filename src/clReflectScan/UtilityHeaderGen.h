@@ -17,7 +17,7 @@ namespace ksj
 {
 	struct BaseTypeList
 	{
-		std::vector<cldb::Name> BaseTypeNameList;
+		std::vector<cldb::TypeInheritance> TypeInheritanceList;
 		bool isInitialized = false;
 	};
 }
@@ -37,7 +37,7 @@ private:
 
 	thread_local static std::map<cldb::u32, ksj::BaseTypeList> BaseTypeList; // key : Derived Class's Name Hash, Value : Base Classes of Derived Class's Name Hash
 
-	static std::vector<cldb::Name> GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db);
+	static const std::vector<cldb::TypeInheritance>& GetBaseTypesName(const cldb::u32 searchDerivedClassNameHash, cldb::Database& db);
 
 	// "::" can't be contained in macros, so we use "__"
 	// '\' or '/' can't be contained in macros, so we use "_"
@@ -59,6 +59,7 @@ private:
 		const cldb::Name targetClassName,
 		const cldb::Name targetRootClassName,
 		cldb::Database& db,
+		ASTConsumer& astConsumer,
 		std::vector<cldb::Name>& baseChainTypeNameList
 	);
 	
@@ -75,7 +76,15 @@ private:
 	);
 	
 	// Write Macros of Class Type to CodeGen
-	void WriteClassMacros(CodeGen& cg, const cldb::Type* const targetClassPrimitive, const std::string& rootclass_typename,  const bool isLastType, cldb::Database& db);
+	void WriteClassMacros
+	(
+		CodeGen& cg, 
+		const cldb::Type* const targetClassPrimitive, 
+		const std::string& rootclass_typename, 
+		const bool isLastType, 
+		cldb::Database& db,
+		ASTConsumer& astConsumer
+	);
 
 	//return macros name
 	std::string WriteCurrentTypeAliasMacros(CodeGen& cg, const cldb::Name& targetClassFullName, const std::string& macrobableClassFullTypeName, const bool isClass);

@@ -47,6 +47,10 @@ public:
 	{
 		return m_SourceFilePathOfDeclMap;
 	}
+	std::map <cldb::u32, cldb::u32>& GetTypeInheritanceDeclararingOrder()
+	{
+		return m_TypeInheritanceDeclararingOrder;
+	}
 
 	void AddSourceLocation(const clang::SourceLocation& sourceLocation, cldb::Primitive* primitive);
 
@@ -76,6 +80,7 @@ private:
 	// key : SourceFilePath of Decl 
 	// implemented 100%
 	std::map <std::string , std::vector<cldb::Primitive*>> m_SourceFilePathOfDeclMap;
+	std::map <cldb::u32, cldb::u32> m_TypeInheritanceDeclararingOrder;
 
     bool m_AllowReflect;
 };

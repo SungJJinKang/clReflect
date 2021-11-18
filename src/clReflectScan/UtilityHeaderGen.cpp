@@ -157,7 +157,7 @@ bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 
 					if (inheritanceOrder != 0)
 					{
-						LOG(UtilityHeaderGen, ERROR, "Inherited class ( %s ) of DObject should inherit DObject's subclass at first pos. Please put declaration of inheriting ( %s ) from ( %s ) at firt pos", targetClassName.text.c_str(), typeInheritanceList[i].base_type, typeInheritanceList[i].derived_type);
+						LOG(UtilityHeaderGen, ERROR, "Inherited class ( %s ) of DObject should inherit DObject's subclass at first pos. Please put declaration of inheriting ( %s ) from ( %s ) at firt pos", targetClassName.text.c_str(), typeInheritanceList[i].base_type.text.c_str(), typeInheritanceList[i].derived_type.text.c_str());
 
 						throw std::exception("Inherited class ( %s ) of DObject should inherit DObject's subclass at first pos");
 					}
@@ -784,53 +784,44 @@ void UtilityHeaderGen::GenUtilityHeader
 		
 		bool isDataGenerated = false;
 
-		try
+		for (size_t i = 0; i < UtilityHeaderTargetTypeList.size(); i++)
 		{
+			assert(UtilityHeaderTargetTypeList[i] != nullptr);
 
-			for (size_t i = 0; i < UtilityHeaderTargetTypeList.size(); i++)
+			bool isSuccess = true;
+			switch (UtilityHeaderTargetTypeList[i]->kind)
 			{
-				assert(UtilityHeaderTargetTypeList[i] != nullptr);
+			case cldb::Primitive::Kind::KIND_CLASS:
+			case cldb::Primitive::Kind::KIND_TEMPLATE:
+			case cldb::Primitive::Kind::KIND_TEMPLATE_TYPE:
+				WriteClassMacros
+				(
+					cg,
+					static_cast<cldb::Class*>(UtilityHeaderTargetTypeList[i]),
+					rootclass_typename,
+					(i == UtilityHeaderTargetTypeList.size() - 1),
+					db,
+					astConsumer
+				);
+				isDataGenerated = true;
+				break;
 
-				bool isSuccess = true;
-				switch (UtilityHeaderTargetTypeList[i]->kind)
-				{
-				case cldb::Primitive::Kind::KIND_CLASS:
-				case cldb::Primitive::Kind::KIND_TEMPLATE:
-				case cldb::Primitive::Kind::KIND_TEMPLATE_TYPE:
-					WriteClassMacros
-					(
-						cg,
-						static_cast<cldb::Class*>(UtilityHeaderTargetTypeList[i]),
-						rootclass_typename,
-						(i == UtilityHeaderTargetTypeList.size() - 1),
-						db,
-						astConsumer
-					);
-					isDataGenerated = true;
-					break;
+			default:
+				isSuccess = false;
+				break;
+			}
 
-				default:
-					isSuccess = false;
-					break;
-				}
-
-				if (isSuccess == true)
-				{
-					cg.Line();
-					cg.Line();
-					cg.Line("//-------------------------------------------");
-					cg.Line();
-					cg.Line();
-				}
-
+			if (isSuccess == true)
+			{
+				cg.Line();
+				cg.Line();
+				cg.Line("//-------------------------------------------");
+				cg.Line();
+				cg.Line();
 			}
 
 		}
-		catch (const std::exception e)
-		{
-			LOG(UtilityHeaderGen, WARNING, "Exception!! ( message : %s )", e.what());
-			isDataGenerated = false;
-		}
+		
 
 		if (isDataGenerated == false)
 		{
@@ -838,13 +829,11 @@ void UtilityHeaderGen::GenUtilityHeader
 		}
 
 
-
-
 		// Check if file exist at outputPath
 		// If it exist, compare cg string with the file.
 		// If they equal, cg is written to outputPath. 
 		// Why need this? : Writing reflection.h file make compiler recompile sourcefile
-		if (isDataGenerated == true && CheckReflectionFileChanged(outputPath, cg) == true)
+		if (/*isDataGenerated == true if class is removed, isDataGenerated is false*/ CheckReflectionFileChanged(outputPath, cg) == true)
 		{
 			cg.WriteToFile(outputPath.c_str());
 			LOG(UtilityHeaderGen, INFO, "Success to create reflection.h file (%s)\n", outputPath.c_str());

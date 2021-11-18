@@ -240,7 +240,16 @@ int main(int argc, const char* argv[])
 	if (sourcePathList.empty() == false)
 	{
 		UtilityHeaderGen utilityHeadergen{};
-		utilityHeadergen.GenUtilityHeader(sourcePathList[0], rootclass_typename, db, ast_consumer);
+		try
+		{
+			utilityHeadergen.GenUtilityHeader(sourcePathList[0], rootclass_typename, db, ast_consumer);
+		}
+		catch (std::exception e)
+		{
+			LOG(main, WARNING, e.what());
+			return 3;
+		}
+		
 	}
 	
 

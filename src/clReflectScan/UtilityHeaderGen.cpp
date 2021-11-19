@@ -205,6 +205,8 @@ std::string UtilityHeaderGen::WriteInheritanceInformationMacros
 	const bool isClass
 )
 {
+	assert(isClass == true);
+
 	std::string baseChainMacros;
 
 	//if class is rootclass or inherited from root class, it never return false and empty list.
@@ -493,6 +495,7 @@ std::string UtilityHeaderGen::WriteCloneObject
 	const bool isClass
 )
 {
+	assert(isClass == true);
 	assert(targetClassFullName.text.empty() == false);
 	assert(targetClassFullName.hash != 0);
 	assert(macrobableClassFullTypeName.empty() == false);

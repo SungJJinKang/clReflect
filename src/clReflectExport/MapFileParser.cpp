@@ -46,6 +46,42 @@ namespace
         return text;
     }
 
+    std::string Remove__ptr(std::string str)
+    {
+		size_t pos;
+		do
+		{
+			pos = std::string::npos;
+
+			pos = str.find(" __ptr64");
+			if (pos == std::string::npos)
+			{
+                pos = str.find(" __ptr32");
+			}
+			if (pos == std::string::npos)
+			{
+				pos = str.find("__ptr64");
+			}
+			if (pos == std::string::npos)
+			{
+				pos = str.find("__ptr32");
+			}
+
+			if (pos != std::string::npos)
+			{
+				str.erase(str.begin() + pos, str.begin() + pos + 7);
+			}
+			else
+			{
+				break;
+			}
+
+		} while (true);
+        
+
+		return str;
+    }
+
     cldb::Field MatchParameter(cldb::Database& db, const char*& ptr, const char* end, bool& is_this_call)
     {
         // TODO: Not exactly proud of this parsing code - started thinking it would be a simple problem
@@ -60,8 +96,10 @@ namespace
 
         char type_name[1024] = {0};
         char token[1024] = {0};
-        is_this_call = false;
 
+#if defined(__i386__) || defined(_M_IX86 ) //KSJ
+        is_this_call = false;
+#endif
         // Loop reading tokens irrespective of order. Note that this parsing strategy won't distinguish between
         // the type of const-qualifier. However, only one mode of qualification is currently supported so this
         // will suffice for now.
@@ -82,16 +120,19 @@ namespace
             }
 
             // Check for const qualification
-            else if (!strcmp(token, "const"))
+            else if (strcmp(token, "const") == 0)
             {
                 parameter.qualifier.is_const = true;
             }
 
+#if defined(__i386__) || defined(_M_IX86 ) // KSJ : __thiscall is used only in x86
             // Mark this calls so that we can add the this parameter first
             else if (!strcmp(token, "__thiscall"))
             {
+				// TODO : __thiscall is removed from x64
                 is_this_call = true;
             }
+#endif
 
             // Check for any type prefixes
             else if (!strcmp(token, "unsigned") || !strcmp(token, "signed"))
@@ -143,7 +184,9 @@ namespace
             }
         }
 
-        parameter.type = db.GetName(type_name);
+        const std::string preferredTypeName = Remove__ptr(type_name);
+
+        parameter.type = db.GetName(preferredTypeName.c_str());
         return parameter;
     }
 
@@ -171,6 +214,35 @@ namespace
     {
         return startswith(function_name, "clcpp::GetType<");
     }
+
+	bool CheckIsConstFunction(const std::string& functionSignature)
+	{
+		bool isConstFunction = false;
+
+		const size_t lastRightParenthesis = functionSignature.find_last_of(')');
+		if (lastRightParenthesis != std::string::npos)
+		{
+			char token[1024];
+
+#ifdef CLCPP_USING_MSVC
+
+#ifdef CLCPP_USING_32_BIT
+#error "Check name mangling" // by KSJ
+#else
+            ConsumeToken(functionSignature.data() + lastRightParenthesis + 1, ' ', token, sizeof(token));
+            isConstFunction = (strcmp(token, "const") == 0);
+    #endif
+
+#else
+
+#error "Check name mangling" // by KSJ
+
+#endif
+
+		}
+
+		return isConstFunction;
+	}
 
     bool AddFunctionAddress(cldb::Database& db, const std::string& function_name, const std::string& function_signature,
                             clcpp::pointer_type function_address, bool is_this_call, bool is_const)
@@ -219,9 +291,10 @@ namespace
 
             // Add the this parameter at the beginning
             cldb::Field this_parameter;
+            this_parameter.name = db.GetName("this"); // KSJ
             this_parameter.type = db.GetName(type_name);
             this_parameter.qualifier.op = cldb::Qualifier::POINTER;
-            this_parameter.qualifier.is_const = is_const;
+            this_parameter.qualifier.is_const = CheckIsConstFunction(function_signature);
             parameters.push_back(this_parameter);
         }
 
@@ -230,6 +303,8 @@ namespace
         const char* end = function_signature.c_str() + r_pos;
         while (ptr < end)
         {
+            // TODO : ptr doesn't show paramter's specifiers ( ex) const ~~ )
+            // compiler consier "void Do1(const int a)" is same with "void Do1(int a)"
             cldb::Field parameter = MatchParameter(db, ptr, end, is_this_call);
             if (!IsVoidParameter(parameter))
                 parameters.push_back(parameter);
@@ -383,8 +458,13 @@ namespace
 
 // MSVC map parsing functions
 #if defined(CLCPP_USING_MSVC)
+
+	static DWORD originalSymOption{};
+
     bool InitialiseSymbolHandler()
     {
+		originalSymOption = SymGetOptions();
+
         SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
         if (!SymInitialize(GetCurrentProcess(), 0, TRUE))
         {
@@ -397,7 +477,8 @@ namespace
 
     void ShutdownSymbolHandler()
     {
-        SymCleanup(GetCurrentProcess());
+		SymSetOptions(originalSymOption);
+        //SymCleanup(GetCurrentProcess());
     }
 
     std::string UndecorateFunctionName(const char* token)
@@ -445,6 +526,37 @@ namespace
 
         return function_address;
     }
+
+	
+
+	// By KSJ
+	bool CheckIsMemberFunction(const std::string& functionSignature)
+	{
+		bool isMemberFunction = false;
+
+		const size_t lastWhiteSpace = functionSignature.find_last_of(' ');
+		if (lastWhiteSpace != std::string::npos)
+		{
+			const char* const lastTocken = functionSignature.data() + lastWhiteSpace + 1;
+
+#ifdef CLCPP_USING_MSVC
+
+#ifdef CLCPP_USING_32_BIT
+			isMemberFunction = (strcmp(lastTocken, "__ptr32") == 0);
+#else
+			isMemberFunction = (strcmp(lastTocken, "__ptr64") == 0);
+#endif
+
+#else
+
+#error "Check name mangling" // by KSJ
+
+#endif
+
+		}
+
+		return isMemberFunction;
+	}
 
     void ParseMSVCMapFile(const char* filename, cldb::Database& db, clcpp::pointer_type& base_address)
     {
@@ -505,7 +617,8 @@ namespace
 
 					if (function_address != 0)
 					{
-						bool is_this_call = false;
+						bool is_this_call = CheckIsMemberFunction(function_signature);
+
 						const char* ptr = function_signature.c_str();
 						size_t func_pos = function_signature.find(function_name);
 
@@ -517,8 +630,14 @@ namespace
 
 						// Skip the return parameter as it can't be used to overload a function
 						cldb::Field returnValue = MatchParameter(db, ptr, ptr + func_pos, is_this_call);
-						AddFunctionAddress(db, function_name, function_signature, function_address, is_this_call,
+						bool isSuccess = AddFunctionAddress(db, function_name, function_signature, function_address, is_this_call,
 							returnValue.qualifier.is_const);
+
+						if (isSuccess == false)
+						{
+							LOG(main, ERROR, "Couldn't AddFunctionAddress for '%s'", function_name.c_str());
+							break;
+						}
 					}
               
                 }
@@ -547,6 +666,8 @@ namespace
         }
         fclose(fp);
         ShutdownSymbolHandler();
+
+        // KSJ TODO : Fix "Stack cookie instrumentation code detected a stack-based buffer overrun."
     }
 #endif // CLCPP_USING_MSVC
 

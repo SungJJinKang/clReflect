@@ -51,6 +51,8 @@ namespace logging
 	//
 	void PushIndent(StreamHandle handle);
 	void PopIndent(StreamHandle handle);
+
+	void UnloadStream();
 }
 
 

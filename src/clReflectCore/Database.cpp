@@ -16,11 +16,16 @@
 
 namespace
 {
-	cldb::u32 CalcFieldHash(const cldb::Field& field)
+	cldb::u32 CalcFieldHash(const cldb::Field& field, bool considerIsConst)
 	{
 		// Construct the fully-qualified type name and hash that
 		std::string name;
-		name += field.qualifier.is_const ? "const " : "";
+		if(considerIsConst == true)
+		{
+			//KSJ
+			name += field.qualifier.is_const ? "const " : "";
+		}
+		
 		name += field.type.text;
 		name += field.qualifier.op == cldb::Qualifier::POINTER ? "*" : field.qualifier.op == cldb::Qualifier::REFERENCE ? "&" : "";
 		return clcpp::internal::HashNameString(name.c_str());
@@ -34,7 +39,19 @@ cldb::u32 cldb::CalculateFunctionUniqueID(const std::vector<Field>& parameters)
 	cldb::u32 unique_id = 0;
 	for (size_t i = 0; i < parameters.size(); i++)
 	{
-		cldb::u32 field_hash = CalcFieldHash(parameters[i]);
+		bool considerConst = false; // KSH
+		if(i == 0) // KSH
+		{
+			if(parameters[0].name.text == "this")
+			{//if parameter is this paramter ( member function )
+				considerConst = true;
+			}
+		} // KSH
+		// MapFilePaser::UndecorateFunctionSignature doesn't show const of function's paramter
+		// So If we calculate unique id of function with const specifier, it can make problem.
+		// because clscan know function paramter's is const, but clexport::MapFilePaser don't
+
+		cldb::u32 field_hash = CalcFieldHash(parameters[i], considerConst);
 		unique_id = clcpp::internal::MixHashes(unique_id, field_hash);
 	}
 

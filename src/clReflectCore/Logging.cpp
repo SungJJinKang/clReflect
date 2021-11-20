@@ -16,6 +16,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <map>
+#include <memory>
 
 
 
@@ -150,12 +151,33 @@ namespace
 	// Each stream object is allocated independently of the others.
 	//
 	typedef std::map<const char*, StreamSet> StreamMap;
-	thread_local StreamMap g_StreamMap;
+
+	struct StreamMapDeleter {
+		//Called by unique_ptr to destroy/free the Resource
+		void operator()(StreamMap* r) 
+		{
+			for (StreamMap::iterator i = r->begin(); i != r->end(); ++i)
+			{
+				for (int j = 0; j < NB_TAG_BITS; j++)
+				{
+					// Delete everything in the linked list
+					while (Stream* stream = i->second.streams[j])
+					{
+						i->second.streams[j] = stream->next;
+						delete stream;
+					}
+				}
+			}
+		}
+
+	};
+	static thread_local std::unique_ptr<StreamMap, StreamMapDeleter> g_StreamMap{ new StreamMap() };
 
 
+	/*
 	void DeleteAllStreams()
 	{
-		for (StreamMap::iterator i = g_StreamMap.begin(); i != g_StreamMap.end(); ++i)
+		for (StreamMap::iterator i = g_StreamMap->begin(); i != g_StreamMap->end(); ++i)
 		{
 			for (int j = 0; j < NB_TAG_BITS; j++)
 			{
@@ -168,13 +190,14 @@ namespace
 			}
 		}
 	}
+	*/
 
 
 	template <typename STREAM_TYPE>
 	void SetLogToStream(const char* name, logging::Tag tag, STREAM_TYPE copy)
 	{
 		// Ensure all streams are deleted on shutdown
-		atexit(DeleteAllStreams);
+		//atexit(DeleteAllStreams);
 
 		// Iterate over every set tag
 		for (int i = 0; i < NB_TAG_BITS; i++)
@@ -183,7 +206,7 @@ namespace
 			if (tag & mask)
 			{
 				// Link the newly allocated copy into the forward linked list
-				StreamArray& streams = g_StreamMap[name].streams;
+				StreamArray& streams = (*g_StreamMap)[name].streams;
 				copy.next = streams[i];
 				streams[i] = new STREAM_TYPE(copy);
 			}
@@ -249,7 +272,7 @@ void logging::SetLogToFile(const char* name, Tag tag, const char* filename)
 
 logging::StreamHandle logging::GetStreamHandle(const char* name)
 {
-	return &g_StreamMap[name];
+	return &((*g_StreamMap)[name]);
 }
 
 #define CL_MIN(a,b) (((a)<(b))?(a):(b))
@@ -315,4 +338,12 @@ void logging::PushIndent(StreamHandle handle)
 void logging::PopIndent(StreamHandle handle)
 {
 	((StreamSet*)handle)->indent_depth--;
+}
+
+void logging::UnloadStream()
+{
+	if (g_StreamMap)
+	{
+		g_StreamMap.reset();
+	}
 }

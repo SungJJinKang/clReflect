@@ -15,7 +15,7 @@
 //
 
 #include "CppExport.h"
-
+#include "PtrRelocator.h"
 
 #include <clReflectCore/Database.h>
 #include <clReflectCore/FileUtils.h>
@@ -23,7 +23,7 @@
 
 #include <clcpp/clcpp.h>
 #include <clcpp/clcpp_internal.h>
-#include "PtrRelocator.h"
+
 #include <algorithm>
 #include <string.h>
 
@@ -569,7 +569,7 @@ namespace
     int ReturnParameterIndex(const clcpp::CArray<const clcpp::Field*>& parameters)
     {
         // Linear search for the named return value
-        thread_local static unsigned int return_hash = clcpp::internal::HashNameString("return");
+        static unsigned int return_hash = clcpp::internal::HashNameString("return");
         for (unsigned int i = 0; i < parameters.size; i++)
         {
             if (parameters[i]->name.hash == return_hash)
@@ -781,15 +781,15 @@ namespace
     unsigned int GetFlagAttributeBits(const clcpp::CArray<const clcpp::Attribute*>& attributes)
     {
         // Cache attribute names
-        thread_local static unsigned int disk_transient_hash = clcpp::internal::HashNameString("disk_transient");
-        thread_local static unsigned int network_transient_hash = clcpp::internal::HashNameString("network_transient");
-        thread_local static unsigned int replicate_transient_hash = clcpp::internal::HashNameString("replicate_transient");
-        thread_local static unsigned int export_transient_hash = clcpp::internal::HashNameString("export_transient");
-        thread_local static unsigned int transient_hash = clcpp::internal::HashNameString("transient");
-        thread_local static unsigned int pre_save_hash = clcpp::internal::HashNameString("pre_save");
-        thread_local static unsigned int post_load_hash = clcpp::internal::HashNameString("post_load");
-        thread_local static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
-        thread_local static unsigned int replicate_hash = clcpp::internal::HashNameString("replicate");
+        static unsigned int disk_transient_hash = clcpp::internal::HashNameString("disk_transient");
+        static unsigned int network_transient_hash = clcpp::internal::HashNameString("network_transient");
+        static unsigned int replicate_transient_hash = clcpp::internal::HashNameString("replicate_transient");
+        static unsigned int export_transient_hash = clcpp::internal::HashNameString("export_transient");
+        static unsigned int transient_hash = clcpp::internal::HashNameString("transient");
+        static unsigned int pre_save_hash = clcpp::internal::HashNameString("pre_save");
+        static unsigned int post_load_hash = clcpp::internal::HashNameString("post_load");
+        static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
+        static unsigned int replicate_hash = clcpp::internal::HashNameString("replicate");
 
         // Merge all detected common flags
         unsigned int bits = 0;
@@ -842,8 +842,8 @@ namespace
 
     unsigned int GetInheritedFlagAttributes(clcpp::Class& class_prim)
     {
-        thread_local static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
-        thread_local static unsigned int custom_flag_inherit = clcpp::internal::HashNameString("custom_flag_inherit");
+        static unsigned int custom_flag = clcpp::internal::HashNameString("custom_flag");
+        static unsigned int custom_flag_inherit = clcpp::internal::HashNameString("custom_flag_inherit");
 
         // Collect all custom attribute bits and set the mask determining inheritance
         unsigned int custom_flags = 0, custom_flags_mask = 0;
@@ -1421,7 +1421,7 @@ void SaveCppExport(CppExport& cppexp, const char* filename)
     relocator.MakeRelative();
 
     // Open the output file
-    FILE* fp = fopen(filename, "wbc");
+    FILE* fp = fopen(filename, "wb");
     if (fp == 0)
     {
         return;
@@ -1443,16 +1443,16 @@ void SaveCppExport(CppExport& cppexp, const char* filename)
     header.nb_ptr_relocations = relocations.size();
     header.data_size = cppexp.allocator.GetAllocatedSize();
     fwrite(&header, sizeof(header), 1, fp);
-    
+
     // Write the complete memory map
     fwrite(cppexp.allocator.GetData(), cppexp.allocator.GetAllocatedSize(), 1, fp);
 
     // Write the stride of each schema and the location of their pointers
-    clcpp::pointer_type ptrs_offset = 0;
+    size_t ptrs_offset = 0;
     for (size_t i = 0; i < schemas.size(); i++)
     {
         const PtrSchema& s = *schemas[i];
-        decltype(s.ptr_offsets)::size_type nb_ptrs = s.ptr_offsets.size();
+        size_t nb_ptrs = s.ptr_offsets.size();
         fwrite(&s.stride, sizeof(s.stride), 1, fp);
         fwrite(&ptrs_offset, sizeof(ptrs_offset), 1, fp);
         fwrite(&nb_ptrs, sizeof(nb_ptrs), 1, fp);
@@ -1463,14 +1463,12 @@ void SaveCppExport(CppExport& cppexp, const char* filename)
     for (size_t i = 0; i < schemas.size(); i++)
     {
         const PtrSchema& s = *schemas[i];
-        
-        fwrite(&(s.ptr_offsets.front()), sizeof(decltype(s.ptr_offsets)::value_type) * s.ptr_offsets.size(), 1, fp);
+        fwrite(&s.ptr_offsets.front(), sizeof(size_t), s.ptr_offsets.size(), fp);
     }
 
     // Write the relocations
-    fwrite(&(relocations.front()), sizeof(PtrRelocation) * relocations.size(), 1, fp);
+    fwrite(&relocations.front(), sizeof(PtrRelocation), relocations.size(), fp);
 
-	fflush(fp);
     fclose(fp);
 }
 

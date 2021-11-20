@@ -51,10 +51,10 @@ struct PtrSchema
     int handle;
 
     // Generally the type size
-    clcpp::pointer_type stride;
+    size_t stride;
 
     // Array of offsets within the type
-    std::vector<clcpp::pointer_type> ptr_offsets;
+    std::vector<size_t> ptr_offsets;
 };
 
 //
@@ -66,7 +66,7 @@ struct PtrRelocation
     int schema_handle;
 
     // Offset to add each pointer offset in the schema
-    clcpp::pointer_type offset;
+    size_t offset;
 
     // Number of objects to relocate, with object stride determined by the schema
     int nb_objects;

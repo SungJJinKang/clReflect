@@ -96,7 +96,7 @@ unsigned int CodeGen::GenerateHash() const
 
 void CodeGen::WriteToFile(const char* filename)
 {
-	FILE* fp = fopen(filename, "wbc");
+	FILE* fp = fopen(filename, "wb");
 	if (fp != 0)
 	{
 		fwrite(m_Text.c_str(), 1, m_Text.size(), fp);

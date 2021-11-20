@@ -217,7 +217,7 @@ namespace
 
 void cldb::WriteBinaryDatabase(const char* filename, const Database& db)
 {
-	FILE* fp = fopen(filename, "wbc");
+	FILE* fp = fopen(filename, "wb");
 
 	// Write the header
 	Write(fp, FILE_HEADER);

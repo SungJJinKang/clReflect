@@ -428,7 +428,12 @@ namespace
         char token[1024];
         line = SkipWhitespace(line);
         line = ConsumeToken(line, ' ', token, sizeof(token));
-        clcpp::pointer_type function_address = hextoi(token);
+
+#if defined(CLCPP_USING_64_BIT)
+		clcpp::pointer_type function_address = hextoi64(token);
+#else
+		clcpp::pointer_type function_address = hextoi(token);
+#endif
 
         // Double-check that the map file knows this is a function
         line = SkipWhitespace(line);

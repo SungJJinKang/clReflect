@@ -106,6 +106,8 @@ namespace
         bool parse = true;
         while (parse && ptr < end)
         {
+            // KSJ : implement processing template
+            // ex ) std::basic_string<char,std::char_traits<char>,std::allocator<char> >
             ptr = ConsumeParameterToken(ptr, token, sizeof(token));
             ptr = SkipWhitespace(ptr);
 

@@ -503,20 +503,24 @@ namespace
                     std::string function_signature = UndecorateFunctionSignature(token);
                     clcpp::pointer_type function_address = ParseAddressField(line, function_name.c_str());
 
-                    bool is_this_call = false;
-                    const char* ptr = function_signature.c_str();
-                    size_t func_pos = function_signature.find(function_name);
+					if (function_address != 0)
+					{
+						bool is_this_call = false;
+						const char* ptr = function_signature.c_str();
+						size_t func_pos = function_signature.find(function_name);
 
-                    if (func_pos == std::string::npos)
-                    {
-                        LOG(main, ERROR, "Couldn't locate function name in signature for '%s'", function_name.c_str());
-                        return;
-                    }
+						if (func_pos == std::string::npos)
+						{
+							LOG(main, ERROR, "Couldn't locate function name in signature for '%s'", function_name.c_str());
+							break;
+						}
 
-                    // Skip the return parameter as it can't be used to overload a function
-                    cldb::Field returnValue = MatchParameter(db, ptr, ptr + func_pos, is_this_call);
-                    AddFunctionAddress(db, function_name, function_signature, function_address, is_this_call,
-                                       returnValue.qualifier.is_const);
+						// Skip the return parameter as it can't be used to overload a function
+						cldb::Field returnValue = MatchParameter(db, ptr, ptr + func_pos, is_this_call);
+						AddFunctionAddress(db, function_name, function_signature, function_address, is_this_call,
+							returnValue.qualifier.is_const);
+					}
+              
                 }
             }
 

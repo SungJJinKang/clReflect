@@ -1099,6 +1099,13 @@ void ASTConsumer::MakeFunction(clang::NamedDecl* decl, const std::string& functi
     // Only add the function once
     if (!function_decl->isFirstDecl())
         return;
+	
+	if (function_decl->isPure() == true)
+	{
+		LOG(ast, INFO, "Pure virtual function can't be reflected ( %s )\n", function_name.c_str());
+		return;
+	}
+
 
     // Parse the return type - named as a reserved keyword so it won't clash with user symbols
     cldb::Field return_parameter;

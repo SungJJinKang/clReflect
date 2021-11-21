@@ -1468,6 +1468,8 @@ void SaveCppExport(CppExport& cppexp, const char* filename)
 
     // Write the relocations
     fwrite(&relocations.front(), sizeof(PtrRelocation), relocations.size(), fp);
+	
+	fflush(fp);
 
     fclose(fp);
 }

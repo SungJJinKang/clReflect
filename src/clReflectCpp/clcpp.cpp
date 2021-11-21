@@ -258,8 +258,6 @@ namespace
                 }
             }
         }
-
-        auto kk = database_mem->types;
         
         // Release temporary array memory
         allocator->Free(relocations.data);

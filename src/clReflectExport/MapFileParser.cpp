@@ -92,7 +92,7 @@ namespace
         const char* skip_tokens[] = {// Argument passing specifications
                                      "__cdecl", "__stdcall", "__fastcall",
                                      // Type modifiers
-                                     "struct", "class", "enum"};
+                                     "struct", "class", "enum", "__ptr64", "__ptr32"};
 
         char type_name[1024] = {0};
         char token[1024] = {0};
@@ -303,6 +303,8 @@ namespace
         // Parse the parameters
         const char* ptr = function_signature.c_str() + l_pos + 1;
         const char* end = function_signature.c_str() + r_pos;
+        // ptr : start of parameters
+        // end : end of paramters
         while (ptr < end)
         {
             // TODO : ptr doesn't show paramter's specifiers ( ex) const ~~ )
@@ -626,7 +628,7 @@ namespace
 
 						if (func_pos == std::string::npos)
 						{
-							LOG(main, ERROR, "Couldn't locate function name in signature for '%s'", function_name.c_str());
+							LOG(main, ERROR, "Couldn't locate function name in signature for '%s'\n", function_name.c_str());
 							break;
 						}
 
@@ -637,8 +639,8 @@ namespace
 
 						if (isSuccess == false)
 						{
-							LOG(main, ERROR, "Couldn't AddFunctionAddress for '%s'", function_name.c_str());
-							break;
+							LOG(main, ERROR, "Couldn't AddFunctionAddress for '%s'\n", function_name.c_str());
+							//break;
 						}
 					}
               

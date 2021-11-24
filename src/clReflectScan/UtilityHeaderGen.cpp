@@ -134,8 +134,6 @@ bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 	std::vector<cldb::Name>& baseChainTypeNameList
 )
 {
-	// TODO : Check multiple inheritance inheriting rootClass ( only one inheritance hierarchy inherits from root class )
-
 	if (targetClassName == targetRootClassName)
 	{
 		//If root class
@@ -155,7 +153,6 @@ bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 					auto iter = astConsumer.GetTypeInheritanceDeclararingOrder().find(typeInheritanceList[i].name.hash);
 					assert(iter != astConsumer.GetTypeInheritanceDeclararingOrder().end());
 
-					/*
 					const size_t inheritanceOrder = iter->second;
 
 					if (inheritanceOrder != 0)
@@ -164,7 +161,6 @@ bool UtilityHeaderGen::GenerateBaseChainList_RecursiveFunction
 
 						throw std::exception("Inherited class ( %s ) of DObject should inherit DObject's subclass at first pos");
 					}
-					*/
 
 					// TODO : Check inherit at first pos.
 					// ex ) class GraphicsServer : public ISingleton, public DObject  <-- This can make problem!! 

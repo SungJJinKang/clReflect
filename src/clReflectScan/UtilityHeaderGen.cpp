@@ -607,9 +607,9 @@ std::vector<cldb::Primitive*> UtilityHeaderGen::FindTargetTypesName
 
 #define READ_BUFFER_SIZE 200
 
-bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath, CodeGen & newlyCreatedReflectionFile)
+bool UtilityHeaderGen::CheckReflectionFileChanged(const std::wstring & outputPath, CodeGen & newlyCreatedReflectionFile)
 {
-	FILE* outputFile = fopen(outputPath.c_str(), "r");
+	FILE* outputFile = _wfopen(outputPath.c_str(), L"r");
 
 	bool isReflectionFileChanged = false;
 

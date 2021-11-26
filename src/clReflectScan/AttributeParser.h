@@ -19,4 +19,4 @@ namespace cldb
     class Database;
 }
 
-std::vector<cldb::Attribute*> ParseAttributes(cldb::Database& db, const char* text, const char* filename, int line);
+std::vector<cldb::Attribute*> ParseAttributes(cldb::Database& db, const char* text, const wchar_t* filename, int line);

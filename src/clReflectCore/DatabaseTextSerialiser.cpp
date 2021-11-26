@@ -265,9 +265,9 @@ namespace
 }
 
 
-void cldb::WriteTextDatabase(const char* filename, const Database& db)
+void cldb::WriteTextDatabase(const wchar_t* filename, const Database& db)
 {
-	FILE* fp = fopen(filename, "wc");
+	FILE* fp = _wfopen(filename, L"wc");
 
 	// Write the header
 	fputs("\nclReflect Database\n", fp);
@@ -748,14 +748,14 @@ namespace
 }
 
 
-bool cldb::ReadTextDatabase(const char* filename, Database& db)
+bool cldb::ReadTextDatabase(const wchar_t* filename, Database& db)
 {
 	if (!IsTextDatabase(filename))
 	{
 		return false;
 	}
 
-	FILE* fp = fopen(filename, "r");
+	FILE* fp = _wfopen(filename, L"r");
 
 	// Parse the tables in whatever order they arrive
 	while (char* line = ReadLine(fp))
@@ -784,10 +784,10 @@ bool cldb::ReadTextDatabase(const char* filename, Database& db)
 }
 
 
-bool cldb::IsTextDatabase(const char* filename)
+bool cldb::IsTextDatabase(const wchar_t* filename)
 {
 	// Not a database if it doesn't exist
-	FILE* fp = fopen(filename, "r");
+	FILE* fp = _wfopen(filename, L"r");
 	if (fp == 0)
 		return false;
 

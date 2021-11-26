@@ -96,7 +96,7 @@ private:
 	std::vector<cldb::Primitive*> FindTargetTypesName(const std::string& sourceFilePath, const std::string& headerFilePath, ASTConsumer& astConsumer, cldb::Database& db);
 	
 	//Why need this? : Writing reflection.h file make compiler recompile sourcefile
-	static bool CheckReflectionFileChanged(const std::string& outputPath, CodeGen& newlyCreatedReflectionFile);
+	static bool CheckReflectionFileChanged(const std::wstring& outputPath, CodeGen& newlyCreatedReflectionFile);
 
 public:
 

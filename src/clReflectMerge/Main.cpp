@@ -45,7 +45,7 @@ int main(int argc, const char* argv[])
     cldb::Database db;
 	for (size_t i = arg_start; i < args.Count(); i++)
 	{
-		const char* filename = args[i].c_str();
+		const wchar_t* filename = args[i].c_str();
 
 		// Try to load the database
 		cldb::Database loaded_db;

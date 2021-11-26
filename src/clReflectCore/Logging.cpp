@@ -61,16 +61,16 @@ namespace
 	//
 	struct FileStream : public Stream
 	{
-		FileStream(const char* f)
+		FileStream(const wchar_t* f)
 			: filename(f)
 		{
-			fp = fopen(filename, "w");
+			fp = _wfopen(filename, L"w");
 		}
 
 		FileStream(const FileStream& fs)
 			: filename(fs.filename)
 		{
-			fp = fopen(filename, "w");
+			fp = _wfopen(filename, L"w");
 		}
 
 		~FileStream()
@@ -90,7 +90,7 @@ namespace
 		}
 
 		FILE* fp;
-		const char* filename;
+		const wchar_t* filename;
 	};
 
 
@@ -257,10 +257,10 @@ void logging::SetLogToStdout(const char* name, Tag tag)
 }
 
 
-void logging::SetLogToFile(const char* name, Tag tag, const char* filename)
+void logging::SetLogToFile(const char* name, Tag tag, const wchar_t* filename)
 {
 	// Open the file for writing, destroying older writes
-	FILE* fp = fopen(filename, "w");
+	FILE* fp = _wfopen(filename, L"w");
 	if (fp)
 	{
 		fclose(fp);

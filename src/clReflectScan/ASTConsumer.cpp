@@ -116,7 +116,7 @@ namespace
 
             // Get text for source location
             clang::PresumedLoc presumed_loc = srcmgr.getPresumedLoc(location);
-            const char* filename = presumed_loc.getFilename();
+            const wchar_t* filename = presumed_loc.getFilename();
             int line = presumed_loc.getLine();
 
             // Print immediate warning
@@ -546,7 +546,7 @@ namespace
             // Decipher the source location of the attribute for error reporting
             clang::SourceLocation location = annotate_attr->getLocation();
             clang::PresumedLoc presumed_loc = srcmgr.getPresumedLoc(location);
-            const char* filename = presumed_loc.getFilename();
+            const wchar_t* filename = presumed_loc.getFilename();
             int line = presumed_loc.getLine();
 
             // Parse all attributes in the text

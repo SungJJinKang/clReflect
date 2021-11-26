@@ -94,9 +94,9 @@ unsigned int CodeGen::GenerateHash() const
 }
 
 
-void CodeGen::WriteToFile(const char* filename)
+void CodeGen::WriteToFile(const wchar_t* filename)
 {
-	FILE* fp = fopen(filename, "wb");
+	FILE* fp = _wfopen(filename, L"wb");
 	if (fp != 0)
 	{
 		fwrite(m_Text.c_str(), 1, m_Text.size(), fp);
@@ -440,7 +440,7 @@ namespace
 		cg.Line();
 	}
 
-	void WriteFile(CodeGen& cg, const char* filename)
+	void WriteFile(CodeGen& cg, const wchar_t* filename)
 	{
 		// Generate the hash for the generated code so far
 		unsigned int hash = cg.GenerateHash();
@@ -448,7 +448,7 @@ namespace
 
 		// If the output file already exists, open it and read its hash
 		unsigned int existing_hash = hash + 1;
-		FILE* fp = fopen(filename, "rb");
+		FILE* fp = _wfopen(filename, L"rb");
 		if (fp != 0)
 		{
 			fscanf(fp, "// %x", &existing_hash);
@@ -463,7 +463,7 @@ namespace
 		}
 	}
 
-	void GenerateCppFile(Namespace::Map& namespaces, const std::vector<Primitive>& primitives, const char* filename)
+	void GenerateCppFile(Namespace::Map& namespaces, const std::vector<Primitive>& primitives, const wchar_t* filename)
 	{
 		CodeGen cg;
 
@@ -502,7 +502,7 @@ namespace
 		WriteFile(cg, filename);
 	}
 
-	void GenerateHFile(Namespace::Map& namespaces, const std::vector<Primitive>& primitives, const char* filename)
+	void GenerateHFile(Namespace::Map& namespaces, const std::vector<Primitive>& primitives, const wchar_t* filename)
 	{
 		CodeGen cg;
 		

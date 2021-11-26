@@ -23,9 +23,9 @@
 class StdFile : public clcpp::IFile
 {
 public:
-	StdFile(const char* filename)
+	StdFile(const wchar_t* filename)
 	{
-		m_FP = fopen(filename, "rb");
+		m_FP = _wfopen(filename, L"rb");
 		if (m_FP == 0)
 		{
 			return;

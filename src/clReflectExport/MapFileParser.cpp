@@ -562,14 +562,14 @@ namespace
 		return isMemberFunction;
 	}
 
-    void ParseMSVCMapFile(const char* filename, cldb::Database& db, clcpp::pointer_type& base_address)
+    void ParseMSVCMapFile(const wchar_t* filename, cldb::Database& db, clcpp::pointer_type& base_address)
     {
         if (!InitialiseSymbolHandler())
         {
             return;
         }
 
-        FILE* fp = fopen(filename, "rb");
+        FILE* fp = _wfopen(filename, L"rb");
         if (fp == 0)
         {
             return;
@@ -989,9 +989,9 @@ namespace
         }
     }
 
-    void ParseGCCMapFile(const char* filename, cldb::Database& db, clcpp::pointer_type& base_address)
+    void ParseGCCMapFile(const wchar_t* filename, cldb::Database& db, clcpp::pointer_type& base_address)
     {
-        FILE* fp = fopen(filename, "rb");
+        FILE* fp = _wfopen(filename, L"rb");
         if (fp == 0)
         {
             return;
@@ -1016,7 +1016,7 @@ namespace
 #endif // CLCPP_USING_GNUC
 }
 
-MapFileParser::MapFileParser(cldb::Database& db, const char* filename)
+MapFileParser::MapFileParser(cldb::Database& db, const wchar_t* filename)
     : m_PreferredLoadAddress(0)
 {
 #if defined(CLCPP_USING_MSVC)

@@ -215,9 +215,9 @@ namespace
 }
 
 
-void cldb::WriteBinaryDatabase(const char* filename, const Database& db)
+void cldb::WriteBinaryDatabase(const wchar_t* filename, const Database& db)
 {
-	FILE* fp = fopen(filename, "wb");
+	FILE* fp = _wfopen(filename, L"wb");
 
 	// Write the header
 	Write(fp, FILE_HEADER);
@@ -383,14 +383,14 @@ namespace
 }
 
 
-bool cldb::ReadBinaryDatabase(const char* filename, Database& db)
+bool cldb::ReadBinaryDatabase(const wchar_t* filename, Database& db)
 {
 	if (!IsBinaryDatabase(filename))
 	{
 		return false;
 	}
 
-	FILE* fp = fopen(filename, "rb");
+	FILE* fp = _wfopen(filename, L"rb");
 
 	// Discard the header
 	Read<unsigned int>(fp);
@@ -427,10 +427,10 @@ bool cldb::ReadBinaryDatabase(const char* filename, Database& db)
 }
 
 
-bool cldb::IsBinaryDatabase(const char* filename)
+bool cldb::IsBinaryDatabase(const wchar_t* filename)
 {
 	// Not a database if the file can't be found
-	FILE* fp = fopen(filename, "rb");
+	FILE* fp = _wfopen(filename, L"rb");
 	if (fp == 0)
 		return false;
 

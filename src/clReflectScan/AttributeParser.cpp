@@ -20,7 +20,7 @@
 namespace
 {
     // Error reporting feedback
-    const char* g_Filename = 0;
+    const wchar_t* g_Filename = 0;
     int g_Line = 0;
 
     enum TokenType
@@ -356,7 +356,7 @@ namespace
     }
 }
 
-std::vector<cldb::Attribute*> ParseAttributes(cldb::Database& db, const char* text, const char* filename, int line)
+std::vector<cldb::Attribute*> ParseAttributes(cldb::Database& db, const char* text, const wchar_t* filename, int line)
 {
     g_Filename = filename;
     g_Line = line;

@@ -30,7 +30,7 @@ namespace logging
 	// Functions for mapping log names/tags to output streams
 	//
 	void SetLogToStdout(const char* name, Tag tag);
-	void SetLogToFile(const char* name, Tag tag, const char* filename);
+	void SetLogToFile(const char* name, Tag tag, const wchar_t* filename);
 
 
 	//

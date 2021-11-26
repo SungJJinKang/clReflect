@@ -33,7 +33,7 @@ public:
 
 	unsigned int GenerateHash() const;
 
-	void WriteToFile(const char* filename);
+	void WriteToFile(const wchar_t* filename);
 
 	int Size() const { return m_Text.size(); }
 	const std::string& GetText() const { return m_Text; }

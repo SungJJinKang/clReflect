@@ -22,6 +22,6 @@ namespace cldb
 struct MapFileParser
 {
 public:
-    MapFileParser(cldb::Database& db, const char* filename);
+    MapFileParser(cldb::Database& db, const wchar_t* filename);
     clcpp::pointer_type m_PreferredLoadAddress;
 };

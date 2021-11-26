@@ -37,7 +37,7 @@
 
 namespace
 {
-	void* LoadSharedLibrary(const char* filename)
+	void* LoadSharedLibrary(const wchar_t* filename)
 	{
 	#if defined(CLCPP_PLATFORM_WINDOWS)
 		return LoadLibraryA(filename);
@@ -83,7 +83,7 @@ clutl::Module::~Module()
 }
 
 
-bool clutl::Module::Load(clcpp::Database* host_db, const char* filename)
+bool clutl::Module::Load(clcpp::Database* host_db, const wchar_t* filename)
 {
 	// Load the DLL
 	m_Handle = LoadSharedLibrary(filename);

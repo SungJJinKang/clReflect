@@ -1226,7 +1226,7 @@ bool BuildCppExport(const cldb::Database& db, CppExport& cppexp)
     return true;
 }
 
-void SaveCppExport(CppExport& cppexp, const char* filename)
+void SaveCppExport(CppExport& cppexp, const wchar_t* filename)
 {
     PtrRelocator relocator(cppexp.allocator.GetData(), cppexp.allocator.GetAllocatedSize());
 
@@ -1421,7 +1421,7 @@ void SaveCppExport(CppExport& cppexp, const char* filename)
     relocator.MakeRelative();
 
     // Open the output file
-    FILE* fp = fopen(filename, "wb");
+    FILE* fp = _wfopen(filename, L"wb");
     if (fp == 0)
     {
         return;
@@ -1730,7 +1730,7 @@ namespace
     }
 }
 
-void WriteCppExportAsText(const CppExport& cppexp, const char* filename)
+void WriteCppExportAsText(const CppExport& cppexp, const wchar_t* filename)
 {
     LOG_TO_FILE(cppexp, ALL, filename);
     LogPrimitive(cppexp.db->global_namespace);

@@ -17,7 +17,7 @@ namespace cldb
 {
 	class Database;
 
-	void WriteTextDatabase(const char* filename, const Database& db);
-	bool ReadTextDatabase(const char* filename, Database& db);
-	bool IsTextDatabase(const char* filename);
+	void WriteTextDatabase(const wchar_t* filename, const Database& db);
+	bool ReadTextDatabase(const wchar_t* filename, Database& db);
+	bool IsTextDatabase(const wchar_t* filename);
 }

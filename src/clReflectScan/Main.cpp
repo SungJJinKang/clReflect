@@ -30,14 +30,14 @@
 
 namespace
 {
-    bool EndsWith(const std::string& str, const std::string& end)
+    bool EndsWith(const std::wstring& str, const std::wstring& end)
     {
         return str.rfind(end) == str.length() - end.length();
     }
 
-    void WriteDatabase(const cldb::Database& db, const std::string& filename)
+    void WriteDatabase(const cldb::Database& db, const std::wstring& filename)
     {
-        if (EndsWith(filename, ".csv"))
+        if (EndsWith(filename, L".csv"))
         {
             cldb::WriteTextDatabase(filename.c_str(), db);
         }
@@ -126,11 +126,11 @@ int main(int argc, const char* argv[])
     //you can't put thread_local to this
     static llvm::cl::OptionCategory ToolCategoryOption("clreflect options");
 	static llvm::cl::cat ToolCategory(ToolCategoryOption);
-	static llvm::cl::opt<std::string> ReflectionSpecLog("spec_log", llvm::cl::desc("Specify reflection spec log filename"),
+	static llvm::cl::opt<std::wstring> ReflectionSpecLog("spec_log", llvm::cl::desc("Specify reflection spec log filename"),
                                                         ToolCategory, llvm::cl::value_desc("filename"));
-	static llvm::cl::opt<std::string> ASTLog("ast_log", llvm::cl::desc("Specify AST log filename"), ToolCategory,
+	static llvm::cl::opt<std::wstring> ASTLog("ast_log", llvm::cl::desc("Specify AST log filename"), ToolCategory,
                                              llvm::cl::value_desc("filename"));
-	static llvm::cl::opt<std::string> Output("output", llvm::cl::desc("Specify database output file, depending on extension"),
+	static llvm::cl::opt<std::wstring> Output("output", llvm::cl::desc("Specify database output file, depending on extension"),
                                              ToolCategory, llvm::cl::value_desc("filename"));
 	static llvm::cl::opt<std::string> RootClassTypeName("rootClass_typeName", llvm::cl::desc("Specify Root class typename including namespace"),
 		ToolCategory, llvm::cl::value_desc("type"));
@@ -160,9 +160,9 @@ int main(int argc, const char* argv[])
 	const std::vector<std::string> sourcePathList = options_parser->getSourcePathList();
     clang::tooling::ClangTool tool(options_parser->getCompilations(), sourcePathList);
 	
-	const std::string outputFilePath = Output;
-	const std::string ast_logFilePath = ASTLog;
-	const std::string spec_logFilePath = ReflectionSpecLog;
+	const std::wstring outputFilePath = Output;
+	const std::wstring ast_logFilePath = ASTLog;
+	const std::wstring spec_logFilePath = ReflectionSpecLog;
 	const std::string rootclass_typename = RootClassTypeName;
 	const bool _Timing = Timing;
 	ReflectionSpecLog.reset();

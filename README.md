@@ -7,15 +7,19 @@ Customized clReflect for DoomsEngine : C++ Reflection using clang
 Extended Feature added by SungJJinKang!!
 -------------------------
 
-Generate Compile-Time Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)          
-- HardCoded BaseChain Data ( https://github.com/SungJJinKang/Fast_Runtime_Type_Casting_cpp )       
-- Current Type Alias, Base Type Alias Macros ( Current:: , Base:: )     
-- Type Reflection Datas        
+#### Generate Compile-Time Reflection Data Header File ( inspided by Unreal Engine's ~.generated.h)          
+- HardCoded BaseChain Data ( you don't need to code current, base class name like https://github.com/SungJJinKang/Fast_Runtime_Type_Casting_cpp, please read [this](https://sungjjinkang.github.io/computerscience/gameengine/2021/11/12/reflection.html) )       
+- Current Type Alias, Base Type Alias Macros for handy scripting ( Current:: , Base:: )     
+- Type Reflection Datas ( Type name, Unique id of the type, ... )          
 - [Example Video](https://youtu.be/KGihaYTzqG8)             
-- [~.reflection.h file example](https://github.com/SungJJinKang/clReflect/tree/doom_engine_version/src/clReflectScan/example)           
+- [~.reflection.h file example](https://github.com/SungJJinKang/clReflect/tree/doom_engine_version/src/clReflectScan/example)            
+
+#### Check virtual table pointer of class hierarchy from root class is located at first address of class ( please read [this](https://sungjjinkang.github.io/computerscience/gameengine/2021/11/12/reflection.html) )                 
+- Dooms engine use reinterpret_cast for runtime type casting.
 
 
-Codes for multithread clang compilation ( clang has a lot of bugs when it used by multiple threads - https://forums.swift.org/t/explicit-versus-inferred-astcontexts/22225/13, https://stackoverflow.com/questions/59589065/how-to-use-clang-libtooling-multiple-times/69955089#69955089 )
+#### Codes for multithread clang compilation ( clang has a lot of bugs when it used by multiple threads - https://forums.swift.org/t/explicit-versus-inferred-astcontexts/22225/13, https://stackoverflow.com/questions/59589065/how-to-use-clang-libtooling-multiple-times/69955089#69955089 )       
+- support for generating reflection data with multiple threads.
 
 --------------------------------------------------
 

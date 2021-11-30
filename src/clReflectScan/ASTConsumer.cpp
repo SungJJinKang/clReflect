@@ -260,28 +260,43 @@ namespace
         {
             // Only support type arguments
             const clang::TemplateArgument& arg = list[i];
-            if (arg.getKind() != clang::TemplateArgument::Type)
-                return Status::Warn(va("Unsupported non-type template parameter %d", i + 1));
+			if (arg.getKind() != clang::TemplateArgument::Type)
+			{
+				if (arg.getKind() == clang::TemplateArgument::Integral)
+				{
+					// Concatenate the arguments in the type name
+					if (i)
+						type_name_str += ",";
+					type_name_str += arg.getAsIntegral().toString(10);
+				}
+				else
+				{
+					return Status::Warn(va("Unsupported non-type template parameter %d", i + 1));
+				}
+			}
+			else
+			{
+				// Recursively parse the template argument to get some parameter info
+				Status status = GetParameterInfo(consumer, arg.getAsType(), template_args[i], false);
+				if (status.HasWarnings())
+					return Status::JoinWarn(status, va("Unsupported template parameter type %d", i + 1));
 
-            // Recursively parse the template argument to get some parameter info
-            Status status = GetParameterInfo(consumer, arg.getAsType(), template_args[i], false);
-            if (status.HasWarnings())
-                return Status::JoinWarn(status, va("Unsupported template parameter type %d", i + 1));
+				// References currently not supported
+				if (template_args[i].qualifer.op == cldb::Qualifier::REFERENCE)
+					return Status::Warn(va("Unsupported reference type as template parameter %d", i + 1));
 
-            // References currently not supported
-            if (template_args[i].qualifer.op == cldb::Qualifier::REFERENCE)
-                return Status::Warn(va("Unsupported reference type as template parameter %d", i + 1));
+				// Can't reflect array template parameters
+				if (template_args[i].array_count)
+					return Status::Warn(va("Unsupported array template parameter %d", i + 1));
 
-            // Can't reflect array template parameters
-            if (template_args[i].array_count)
-                return Status::Warn(va("Unsupported array template parameter %d", i + 1));
-
-            // Concatenate the arguments in the type name
-            if (i)
-                type_name_str += ",";
-            type_name_str += template_args[i].type_name;
-            if (template_args[i].qualifer.op == cldb::Qualifier::POINTER)
-                type_name_str += "*";
+				// Concatenate the arguments in the type name
+				if (i)
+					type_name_str += ",";
+				type_name_str += template_args[i].type_name;
+				if (template_args[i].qualifer.op == cldb::Qualifier::POINTER)
+					type_name_str += "*";
+			}
+            
         }
 
         type_name_str += ">";

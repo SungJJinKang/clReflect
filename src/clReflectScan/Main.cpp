@@ -134,6 +134,8 @@ int main(int argc, const char* argv[])
                                              ToolCategory, llvm::cl::value_desc("filename"));
 	static llvm::cl::opt<std::string> RootClassTypeName("rootClass_typeName", llvm::cl::desc("Specify Root class typename including namespace"),
 		ToolCategory, llvm::cl::value_desc("type"));
+	static llvm::cl::opt<std::string> ProjectFolderPath("project_folder_path", llvm::cl::desc("Project Folder Path"),
+		ToolCategory, llvm::cl::value_desc("type"));
 	static llvm::cl::opt<bool> Timing("timing", llvm::cl::desc("Print some rough timing info"), ToolCategory);
 	
 	//auto option = llvm::cl::getRegisteredOptions(*llvm::cl::AllSubCommands);
@@ -164,11 +166,13 @@ int main(int argc, const char* argv[])
 	const std::string ast_logFilePath = ASTLog;
 	const std::string spec_logFilePath = ReflectionSpecLog;
 	const std::string rootclass_typename = RootClassTypeName;
+	const std::string projectFolderPath = ProjectFolderPath.hasArgStr() ? ProjectFolderPath.getValue() : "";
 	const bool _Timing = Timing;
 	ReflectionSpecLog.reset();
 	ASTLog.reset();
 	Output.reset();
 	RootClassTypeName.reset();
+	ProjectFolderPath.reset();
 	Timing.reset();
 
 	for (auto iter = llvm::cl::AllSubCommands->OptionsMap.begin(); iter != llvm::cl::AllSubCommands->OptionsMap.end(); iter++)
@@ -242,7 +246,7 @@ int main(int argc, const char* argv[])
 		UtilityHeaderGen utilityHeadergen{};
 		try
 		{
-			utilityHeadergen.GenUtilityHeader(sourcePathList[0], rootclass_typename, db, ast_consumer);
+			utilityHeadergen.GenUtilityHeader(sourcePathList[0], projectFolderPath, rootclass_typename, db, ast_consumer);
 		}
 		catch (std::exception e)
 		{

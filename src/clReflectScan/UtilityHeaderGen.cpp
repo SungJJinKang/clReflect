@@ -700,6 +700,7 @@ bool UtilityHeaderGen::CheckReflectionFileChanged(const std::string & outputPath
 void UtilityHeaderGen::GenUtilityHeader
 (
 	const std::string& sourceFilePath, 
+	const std::string& projectFolderPath,
 	const std::string& rootclass_typename, 
 	cldb::Database & db,
 	ASTConsumer& astConsumer
@@ -755,11 +756,40 @@ void UtilityHeaderGen::GenUtilityHeader
 		cg.Line();
 		cg.Line();
 
+		std::string outputPathMacros = ConvertNameToMacrobableName(outputPath);
 
-		const std::string outputPathMacros = ConvertNameToMacrobableName(outputPath);
+		bool isSuccessUseRelativePath = false;
+		if (projectFolderPath.empty() == false)
+		{
+			const std::string projectFolderPathMacros = ConvertNameToMacrobableName(projectFolderPath);
+			const size_t findPos = outputPathMacros.find(projectFolderPathMacros);
+			if (findPos == std::string::npos)
+			{
+				std::string log;
+				log += "Fail to find projectFolderPath from outputPath";
+				log += " ( projectFolderPath : ";
+				log += projectFolderPathMacros;
+				log += " , outputPath : ";
+				log += outputPathMacros;
+				log += " )";
+				LOG(UtilityHeaderGen, WARNING, log.c_str());
+				return;
+			}
+
+			outputPathMacros = outputPathMacros.data() + findPos + projectFolderPathMacros.size();
+			isSuccessUseRelativePath = true;
+		}
+
+		if(isSuccessUseRelativePath == false)
+		{
+			LOG(UtilityHeaderGen, WARNING, "Fail to find projectFolderPath from outputPath");
+			isSuccessUseRelativePath = true;
+		}
+		
+
 		cg.Line("#ifdef %s", outputPathMacros.c_str());
 		cg.Line();
-		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPath.c_str(), outputPath.c_str());
+		cg.Line("#error \"%s already included, missing '#pragma once' in %s\"", outputPathMacros.c_str(), outputPathMacros.c_str());
 		cg.Line();
 		cg.Line("#endif");
 		cg.Line();

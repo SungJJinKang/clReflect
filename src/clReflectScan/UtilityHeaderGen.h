@@ -109,6 +109,7 @@ public:
 	void GenUtilityHeader
 	(
 		const std::string& sourceFilePath, 
+		const std::string& projectFolderPath,
 		const std::string& rootclass_typename,
 		cldb::Database& db,
 		ASTConsumer& astConsumer

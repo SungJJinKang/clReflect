@@ -748,13 +748,7 @@ void UtilityHeaderGen::GenUtilityHeader
 
 		CodeGen cg;
 
-		// Generate arrays
-		cg.Line("#pragma once");
-		cg.Line();
-		cg.Line("// Utility Header File ( Don't Edit this )");
-		cg.Line("// SourceFilePath : %s", sourceFilePath.c_str());
-		cg.Line();
-		cg.Line();
+		
 
 		std::string outputPathMacros = ConvertNameToMacrobableName(outputPath);
 
@@ -786,6 +780,15 @@ void UtilityHeaderGen::GenUtilityHeader
 			isSuccessUseRelativePath = true;
 		}
 		
+		outputPathMacros = "_" + outputPathMacros;
+
+		// Generate arrays
+		cg.Line("#pragma once");
+		cg.Line();
+		cg.Line("// Utility Header File ( Don't Edit this )");
+		cg.Line("// SourceFilePath : %s", outputPathMacros.c_str());
+		cg.Line();
+		cg.Line();
 
 		cg.Line("#ifdef %s", outputPathMacros.c_str());
 		cg.Line();

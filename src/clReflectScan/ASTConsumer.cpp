@@ -36,6 +36,8 @@
 
 #include <stdarg.h>
 
+#include <unordered_set>
+#include <memory>
 #include <clReflectCore/pathUtility.h>
 
 namespace
@@ -143,8 +145,8 @@ namespace
         cldb::u32 array_count;
     };
 
-    Status GetParameterInfo(ASTConsumer& consumer, clang::QualType qual_type, ParameterInfo& info, int flags);
-    Status ParseTemplateSpecialisation(ASTConsumer& consumer, const clang::Type* type, std::string& type_name_str);
+    Status GetParameterInfo(ASTConsumer& consumer, clang::QualType qual_type, ParameterInfo& info, int flags, std::shared_ptr<std::unordered_set<std::string>> alreadyParsedType);
+    Status ParseTemplateSpecialisation(ASTConsumer& consumer, const clang::Type* type, std::string& type_name_str, std::shared_ptr<std::unordered_set<std::string>> alreadyParsedType);
 
     // A wrapper around a clang's CV-qualified types
     struct ClangASTType
@@ -179,7 +181,7 @@ namespace
     };
 
     Status ParseBaseClass(ASTConsumer& consumer, cldb::Name derived_type_name, const clang::CXXBaseSpecifier& base,
-                          cldb::Name& base_name, const size_t inheritOrder)
+                          cldb::Name& base_name, const size_t inheritOrder, std::shared_ptr<std::unordered_set<std::string>> alreadyParsedType)
 		// inheritLoc : order of declaring inheritance
     {
         // Get canonical base type
@@ -197,7 +199,7 @@ namespace
             return Status::Warn(va("Class '%s' is an unsupported virtual base class", type_name_str.c_str()));
 
         // Discover any new template types
-        Status status = ParseTemplateSpecialisation(consumer, base_type.type, type_name_str);
+        Status status = ParseTemplateSpecialisation(consumer, base_type.type, type_name_str, alreadyParsedType);
         if (status.HasWarnings())
             return status;
 		
@@ -233,8 +235,13 @@ namespace
 		return true;
 	}
 
-    Status ParseTemplateSpecialisation(ASTConsumer& consumer, const clang::ClassTemplateSpecializationDecl* cts_decl,
-                                       std::string& type_name_str)
+    Status ParseTemplateSpecialisation
+	(
+		ASTConsumer& consumer, 
+		const clang::ClassTemplateSpecializationDecl* cts_decl,
+        std::string& type_name_str, 
+		std::shared_ptr<std::unordered_set<std::string>> alreadyParsedType /* Added by ksj, This is for proventing circular inherit. ex) class Renderer : public ISingleton<Renderer> -> Parsing this class never be finished.    */
+	)
     {
         // Get the template being specialised and see if it's marked for reflection
         // The template definition needs to be in scope for specialisations to occur. This implies
@@ -277,7 +284,7 @@ namespace
 			else
 			{
 				// Recursively parse the template argument to get some parameter info
-				Status status = GetParameterInfo(consumer, arg.getAsType(), template_args[i], false);
+				Status status = GetParameterInfo(consumer, arg.getAsType(), template_args[i], false, alreadyParsedType);
 				if (status.HasWarnings())
 					return Status::JoinWarn(status, va("Unsupported template parameter type %d", i + 1));
 
@@ -306,13 +313,25 @@ namespace
         {
             cldb::Name type_name = db.GetName(type_name_str.c_str());
 
+			if (cts_decl->getNumBases() != 0)
+			{
+				if (alreadyParsedType == false)
+				{
+					alreadyParsedType = std::make_shared<std::unordered_set<std::string>>();
+				}
+
+				//ParameterInfo parameterInfo{};
+
+				alreadyParsedType->emplace(type_name_str);
+			}
+
             // Try to parse the base classes
             std::vector<cldb::Name> base_names;
             for (clang::CXXRecordDecl::base_class_const_iterator base_it = cts_decl->bases_begin();
                  base_it != cts_decl->bases_end(); base_it++)
             {
                 cldb::Name base_name;
-                Status status = ParseBaseClass(consumer, type_name, *base_it, base_name, base_it - cts_decl->bases_begin());
+                Status status = ParseBaseClass(consumer, type_name, *base_it, base_name, base_it - cts_decl->bases_begin(), alreadyParsedType);
                 if (status.HasWarnings())
                     return Status::JoinWarn(status, "Failure to create template type due to invalid base class");
                 base_names.push_back(base_name);
@@ -348,7 +367,7 @@ namespace
         return Status();
     }
 
-    Status ParseTemplateSpecialisation(ASTConsumer& consumer, const clang::Type* type, std::string& type_name_str)
+    Status ParseTemplateSpecialisation(ASTConsumer& consumer, const clang::Type* type, std::string& type_name_str, std::shared_ptr<std::unordered_set<std::string>> alreadyParsedType)
     {
         if (const clang::CXXRecordDecl* type_decl = type->getAsCXXRecordDecl())
         {
@@ -366,7 +385,7 @@ namespace
                 assert(cts_decl && "Couldn't cast to template specialisation decl");
 
                 // Parse template specialisation parameters
-                Status status = ParseTemplateSpecialisation(consumer, cts_decl, type_name_str);
+                Status status = ParseTemplateSpecialisation(consumer, cts_decl, type_name_str, alreadyParsedType);
                 if (status.HasWarnings())
                     return Status::JoinWarn(status,
                                             va("Couldn't parse template specialisation parameter '%s'", type_name_str.c_str()));
@@ -376,7 +395,7 @@ namespace
         return Status();
     }
 
-    Status GetParameterInfo(ASTConsumer& consumer, clang::QualType qual_type, ParameterInfo& info, int flags)
+    Status GetParameterInfo(ASTConsumer& consumer, clang::QualType qual_type, ParameterInfo& info, int flags, std::shared_ptr<std::unordered_set<std::string>> alreadyParsedType)
     {
         // Get type info for the parameter
         ClangASTType ctype(qual_type);
@@ -434,9 +453,12 @@ namespace
         }
 
         // Discover any new template types
-        Status status = ParseTemplateSpecialisation(consumer, ctype.type, info.type_name);
-        if (status.HasWarnings())
-            return status;
+		if (alreadyParsedType == false || alreadyParsedType->find(info.type_name) == alreadyParsedType->end())
+		{
+			Status status = ParseTemplateSpecialisation(consumer, ctype.type, info.type_name, alreadyParsedType);
+			if (status.HasWarnings())
+				return status;
+		}
 
         // Pull the class descriptions from the type name
         Remove(info.type_name, "enum ");
@@ -465,7 +487,7 @@ namespace
                      int index, cldb::Field& field, int flags)
     {
         ParameterInfo info;
-        Status status = GetParameterInfo(consumer, qual_type, info, flags);
+        Status status = GetParameterInfo(consumer, qual_type, info, flags, nullptr);
         if (status.HasWarnings())
             return Status::JoinWarn(status, va("Failure to make field '%s'", param_name));
 
@@ -846,7 +868,7 @@ void ASTConsumer::AddClassDecl(clang::NamedDecl* decl, const std::string& name, 
              base_it != record_decl->bases_end(); base_it++)
         {
             cldb::Name base_name;
-            Status status = ParseBaseClass(*this, type_name, *base_it, base_name, base_it - record_decl->bases_begin());
+            Status status = ParseBaseClass(*this, type_name, *base_it, base_name, base_it - record_decl->bases_begin(), nullptr);
             if (status.HasWarnings())
             {
                 status.Print(record_decl->getLocation(), m_ASTContext->getSourceManager(),

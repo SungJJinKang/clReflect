@@ -18,7 +18,7 @@ Extended Feature added by SungJJinKang!!
 - Dooms engine use reinterpret_cast for runtime type casting.
 
 
-#### Codes for multithread clang compilation ( clang has a lot of bugs when it used by multiple threads - https://forums.swift.org/t/explicit-versus-inferred-astcontexts/22225/13, https://stackoverflow.com/questions/59589065/how-to-use-clang-libtooling-multiple-times/69955089#69955089 )       
+#### Codes for multithread clang compilation ( clang has a bug when it used by multiple threads - https://forums.swift.org/t/explicit-versus-inferred-astcontexts/22225/13, https://stackoverflow.com/questions/59589065/how-to-use-clang-libtooling-multiple-times/69955089#69955089 )       
 - support for generating reflection data with multiple threads.
 
 --------------------------------------------------
